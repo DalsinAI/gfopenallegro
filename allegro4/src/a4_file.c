@@ -180,7 +180,8 @@ int pack_fclose(PACKFILE *f)
     return r;
 }
 
-/* a sub-chunk: 32-bit unpacked size, 32-bit stored size (negative: LZSS) */
+/* a sub-chunk (Allegro 4 grabber order): 32-bit size of the bytes in the file,
+ * then 32-bit size of the object itself, negative when those bytes are LZSS */
 PACKFILE *pack_fopen_chunk(PACKFILE *f, int pack)
 {
     PACKFILE *c;
@@ -196,14 +197,10 @@ PACKFILE *pack_fopen_chunk(PACKFILE *f, int pack)
     }
     {
         long fsize = pack_mgetl(f), dsize = pack_mgetl(f);
-        c->fsize = fsize;
         if (pack_feof(f) && fsize == EOF) { free_pf(c); return NULL; }
-        if (dsize < 0) {
-            c->limit = -dsize;
-            if (start_lz(c) != 0) { free_pf(c); return NULL; }
-        } else {
-            c->limit = dsize;
-        }
+        c->fsize = dsize < 0 ? -dsize : dsize;  /* the object's own size */
+        c->limit = fsize;                        /* the bytes in the file */
+        if (dsize < 0 && start_lz(c) != 0) { free_pf(c); return NULL; }
     }
     return c;
 }
@@ -422,9 +419,8 @@ static PACKFILE *find_object(PACKFILE *f, const char *name)
         }
         {
             long fsize = pack_mgetl(f), dsize = pack_mgetl(f);
-            (void)fsize;
-            if (dsize < 0) dsize = -dsize;
-            if (pack_fseek(f, (int)dsize) != 0) return NULL;
+            (void)dsize;                         /* skip the bytes in the file */
+            if (fsize < 0 || pack_fseek(f, (int)fsize) != 0) return NULL;
         }
     }
 }

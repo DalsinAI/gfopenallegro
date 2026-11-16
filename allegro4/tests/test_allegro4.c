@@ -457,7 +457,7 @@ static void test_files(void)
     put32(f, DAT_PALETTE); put32(f, 768); put32(f, 768);
     for (i = 0; i < 256; i++) { fputc(i, f); fputc(255 - i, f); fputc(128, f); }
     put_name(f, "TEXT");
-    put32(f, DAT_DATA); put32(f, 200); put32(f, -n);
+    put32(f, DAT_DATA); put32(f, n); put32(f, -200);    /* grabber order: bytes in file, then -object size (LZSS) */
     fwrite(packed, 1, (size_t)n, f);
     put_name(f, "INNER");
     put32(f, DAT_FILE); put32(f, 4 + 4 + 12 + 1 + 4 + 4 + 4 + 3); put32(f, 4 + 4 + 12 + 1 + 4 + 4 + 4 + 3);
