@@ -141,10 +141,10 @@ def main():
         isvoid = ret == "void"
         # the library side
         params = ["REG(%s, %s)" % (r, decl(t, n)) for (t, n, p), r in zip(args, regs)]
-        params.append("REG(a6, struct A4Base *base)")
+        params.append("REG(a6, struct A4Base *_lb)")
         call = "%s(%s)" % (name, ", ".join(n for t, n, p in args))
-        body = ("    ENTER(base);\n    %s;\n    LEAVE();\n" % call) if isvoid else \
-               ("    %s r;\n    ENTER(base);\n    r = %s;\n    LEAVE();\n    return r;\n" % (ret, call))
+        body = ("    ENTER(_lb);\n    %s;\n    LEAVE();\n" % call) if isvoid else \
+               ("    %s _r;\n    ENTER(_lb);\n    _r = %s;\n    LEAVE();\n    return _r;\n" % (ret, call))
         entries.append("static %s L_%s(%s)\n{\n%s}" % (ret, name, ", ".join(params), body))
         vectors.append("(APTR)L_%s" % name)
         # the game side
