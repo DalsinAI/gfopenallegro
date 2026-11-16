@@ -4892,3 +4892,27 @@ void yield_timeslice(void)
     register struct Library *_a6 __asm("a6") = _b;
     __asm volatile ("jsr -2268(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
 }
+
+void pop_config_state(void)
+{
+    struct Library *const _b = a4_base();
+    if (!_b) return;
+    register long _d0 __asm("d0") = 0;
+    register long _d1 __asm("d1") = 0;
+    register long _a0 __asm("a0") = 0;
+    register long _a1 __asm("a1") = 0;
+    register struct Library *_a6 __asm("a6") = _b;
+    __asm volatile ("jsr -2274(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
+}
+
+void push_config_state(void)
+{
+    struct Library *const _b = a4_base();
+    if (!_b) return;
+    register long _d0 __asm("d0") = 0;
+    register long _d1 __asm("d1") = 0;
+    register long _a0 __asm("a0") = 0;
+    register long _a1 __asm("a1") = 0;
+    register struct Library *_a6 __asm("a6") = _b;
+    __asm volatile ("jsr -2280(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
+}

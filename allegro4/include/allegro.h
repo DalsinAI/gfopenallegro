@@ -128,6 +128,8 @@ void set_config_string(const char *section, const char *name, const char *val);
 void set_config_int(const char *section, const char *name, int val);
 void override_config_file(const char *filename);
 void flush_config_file(void);
+void push_config_state(void);
+void pop_config_state(void);
 
 /* ---- fixed point ------------------------------------------------------------ */
 

@@ -93,6 +93,8 @@ void set_config_string(const char *s, const char *n, const char *v) { (void)s; (
 void set_config_int(const char *s, const char *n, int v) { (void)s; (void)n; (void)v; }
 void override_config_file(const char *f) { (void)f; }
 void flush_config_file(void) {}
+void push_config_state(void) {}
+void pop_config_state(void) {}
 
 /* a message box on the screen: lines and buttons; returns the button picked
  * (1-3) by its first letter, Return (1) or Esc (last) */

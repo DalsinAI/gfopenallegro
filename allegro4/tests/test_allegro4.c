@@ -838,6 +838,11 @@ static void test_compat(void)
     set_color_conversion(COLORCONV_REDUCE_TO_256);
     CHECK_EQ(get_color_conversion(), COLORCONV_REDUCE_TO_256);
     ASSERT(0);                                      /* nothing without DEBUGMODE */
+    push_config_state();                            /* KQ Lives saves and restores around its own file */
+    set_config_file("kq.cfg");
+    CHECK_EQ(get_config_int("game", "speed", 7), 7);
+    pop_config_state();
+    CHECK_EQ(get_config_int("game", "speed", 3), 3);
 }
 
 int main(void)

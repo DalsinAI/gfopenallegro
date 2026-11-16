@@ -373,3 +373,5 @@ voice_stop
 vsync
 xor_mode
 yield_timeslice
+pop_config_state
+push_config_state

@@ -381,4 +381,6 @@ void voice_stop(int voice)(d0)
 void vsync()()
 void xor_mode(int on)(d0)
 void yield_timeslice()()
+void pop_config_state()()
+void push_config_state()()
 ==end

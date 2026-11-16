@@ -3024,6 +3024,20 @@ static void L_yield_timeslice(REG(a6, struct A4Base *_lb))
     LEAVE();
 }
 
+static void L_pop_config_state(REG(a6, struct A4Base *_lb))
+{
+    ENTER(_lb);
+    pop_config_state();
+    LEAVE();
+}
+
+static void L_push_config_state(REG(a6, struct A4Base *_lb))
+{
+    ENTER(_lb);
+    push_config_state();
+    LEAVE();
+}
+
 static const APTR a4_vectors[] = {
     (APTR)lib_open, (APTR)lib_close, (APTR)lib_expunge, (APTR)lib_null,
     (APTR)L__getpixel,
@@ -3400,5 +3414,7 @@ static const APTR a4_vectors[] = {
     (APTR)L_vsync,
     (APTR)L_xor_mode,
     (APTR)L_yield_timeslice,
+    (APTR)L_pop_config_state,
+    (APTR)L_push_config_state,
     (APTR)-1,
 };
