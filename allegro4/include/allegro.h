@@ -913,7 +913,7 @@ int get_midi_length(MIDI *midi);
  * a game with its own audio output may call it. */
 void a4_mix_s16stereo(int16_t *out, int frames, int rate);
 
-/* ---- GUI (alert only) ----------------------------------------------------------------- */
+/* ---- GUI: alert (the dialog engine is in a4_gui.h) ----------------------------------------------------------------- */
 
 int alert(const char *s1, const char *s2, const char *s3, const char *b1, const char *b2, int c1, int c2);
 int alert3(const char *s1, const char *s2, const char *s3, const char *b1, const char *b2, const char *b3,
@@ -922,5 +922,8 @@ int alert3(const char *s1, const char *s2, const char *s3, const char *b1, const
 #ifdef __cplusplus
 }
 #endif
+
+/* the dialog engine: game-side, in liballeg.a (not library calls) */
+#include "a4_gui.h"
 
 #endif

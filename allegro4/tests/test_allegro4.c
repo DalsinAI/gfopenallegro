@@ -642,6 +642,192 @@ static void test_find(void)
     }
 }
 
+/* ---- the GUI (src/a4_gui.c) ------------------------------------------------------------ */
+
+static int tm_x, tm_y, tm_reads, tm_z;
+static int t_mouse_x(void) { return tm_x; }
+static int t_mouse_y(void) { return tm_y; }
+static int t_mouse_z(void) { return tm_z; }
+static int t_mouse_b(void) { if (tm_reads > 0) { tm_reads--; return 1; } return 0; }
+static void t_click(int x, int y) { tm_x = x; tm_y = y; tm_reads = 3; }
+
+static const char *items[] = { "apple", "banana", "cherry", "damson", "elder" };
+static char *t_getter(int index, int *size)
+{
+    if (index < 0) { *size = 5; return NULL; }
+    return (char *)items[index];
+}
+static int f1_calls;
+static int t_f1(void) { f1_calls++; return D_O_K; }
+static int slider_seen = -1;
+static int t_slider_cb(void *dp3, int d2) { (void)dp3; slider_seen = d2; return D_O_K; }
+
+static void test_gui(void)
+{
+    static char ebuf[16];
+    BITMAP *b;
+    DIALOG_PLAYER *p;
+    int th, n, fw;
+    DIALOG dlg[] = {
+        /* proc              x    y    w    h   fg  bg key  flags      d1  d2  dp                 dp2                   dp3 */
+        { d_box_proc,         0,   0, 320, 200, 15,  1,  0, 0,          0,  0, NULL,              NULL,                 NULL },
+        { d_button_proc,     10,  10,  60,  16, 15,  1, 'o', D_EXIT,     0,  0, (void *)"&OK",     NULL,                 NULL },
+        { d_edit_proc,       10,  40, 100,  10, 15,  1,  0, 0,         10,  0, ebuf,              NULL,                 NULL },
+        { d_list_proc,       10,  60, 100,  44, 15,  1,  0, D_EXIT,     0,  0, (void *)t_getter,  NULL,                 NULL },
+        { d_slider_proc,    150,  10, 101,  10, 15,  1,  0, 0,        100, 10, NULL,              (void *)t_slider_cb,  NULL },
+        { d_keyboard_proc,    0,   0,   5,   5,  0,  0,  0, 0,     KEY_F1,  0, (void *)t_f1,      NULL,                 NULL },
+        { d_radio_proc,     150,  40,  60,   8, 15,  1,  0, D_SELECTED, 1,  0, (void *)"one",     NULL,                 NULL },
+        { d_radio_proc,     150,  50,  60,   8, 15,  1,  0, 0,          1,  0, (void *)"two",     NULL,                 NULL },
+        { d_check_proc,     150,  60,  60,   8, 15,  1,  0, 0,          1,  0, (void *)"check",   NULL,                 NULL },
+        { d_textbox_proc,   150,  80, 120,  30, 15,  1,  0, 0,          0,  0, (void *)"one two three four five six seven eight nine ten eleven twelve", NULL, NULL },
+        { d_text_proc,      200, 150,  50,   8, 15,  1,  0, D_HIDDEN,   0,  0, (void *)"hidden",  NULL,                 NULL },
+        { NULL,               0,   0,   0,   0,  0,  0,  0, 0,          0,  0, NULL,              NULL,                 NULL },
+    };
+
+    CHECK_EQ(set_gfx_mode(GFX_AUTODETECT, 320, 200, 0, 0), 0);
+    install_keyboard();
+    clear_keybuf();
+    b = gui_get_screen();
+    CHECK(b == screen);
+    th = text_height(font);
+
+    /* & shortcuts */
+    CHECK_EQ(gui_strlen("&File"), text_length(font, "File"));
+    CHECK_EQ(gui_strlen("a&&b"), text_length(font, "a&b"));
+    {
+        BITMAP *t = create_bitmap(64, 16);
+        clear_to_color(t, 0);
+        fw = gui_textout_ex(t, "&F", 0, 0, 9, -1, FALSE);
+        CHECK_EQ(fw, text_length(font, "F"));
+        CHECK_EQ(getpixel(t, 0, th), 9);             /* the underline */
+        CHECK_EQ(getpixel(t, fw + 1, th), 0);
+        destroy_bitmap(t);
+    }
+
+    gui_mouse_x = t_mouse_x; gui_mouse_y = t_mouse_y; gui_mouse_z = t_mouse_z; gui_mouse_b = t_mouse_b;
+    tm_x = 300; tm_y = 190; tm_reads = 0; tm_z = 0;
+
+    /* start, draw, focus */
+    p = init_dialog(dlg, 2);
+    CHECK(p != NULL);
+    CHECK(active_dialog == dlg);
+    CHECK_EQ(dlg[5].w, 0);                           /* d_keyboard_proc has no size */
+    CHECK(dlg[2].flags & D_GOTFOCUS);
+    CHECK(dlg[9].d1 > 1);                            /* the text box wrapped */
+    clear_to_color(screen, 0);
+    CHECK(update_dialog(p));
+    CHECK_EQ(getpixel(screen, 10, 10), 15);          /* the button's frame */
+    CHECK_EQ(getpixel(screen, 69, 25), 15);          /* and its shadow */
+    CHECK_EQ(getpixel(screen, 200, 150), 1);         /* hidden text: only the box under it */
+
+    /* typing into the edit box */
+    simulate_ukeypress('h', KEY_H);
+    simulate_ukeypress('i', KEY_I);
+    CHECK(update_dialog(p));
+    CHECK(strcmp(ebuf, "hi") == 0);
+    CHECK_EQ(dlg[2].d2, 2);
+    simulate_keypress(KEY_BACKSPACE << 8);
+    simulate_keypress(KEY_HOME << 8);
+    simulate_ukeypress('a', KEY_A);
+    CHECK(update_dialog(p));
+    CHECK(strcmp(ebuf, "ah") == 0);
+    for (n = 0; n < 12; n++) simulate_ukeypress('x', KEY_X);
+    CHECK(update_dialog(p));
+    CHECK_EQ((int)strlen(ebuf), 10);                 /* d1 is the most */
+
+    /* a key no object uses: d_keyboard_proc gets it */
+    simulate_keypress(KEY_F1 << 8);
+    CHECK(update_dialog(p));
+    CHECK_EQ(f1_calls, 1);
+
+    /* Tab: the focus moves on to the list */
+    simulate_keypress(KEY_TAB << 8);
+    CHECK(update_dialog(p));
+    CHECK(dlg[3].flags & D_GOTFOCUS);
+    CHECK(!(dlg[2].flags & D_GOTFOCUS));
+    simulate_keypress(KEY_DOWN << 8);
+    simulate_keypress(KEY_DOWN << 8);
+    CHECK(update_dialog(p));
+    CHECK_EQ(dlg[3].d1, 2);
+    simulate_keypress(KEY_END << 8);
+    CHECK(update_dialog(p));
+    CHECK_EQ(dlg[3].d1, 4);
+    CHECK_EQ(dlg[3].d2, 4 - (44 - 4) / th + 1);      /* scrolled to show it */
+
+    /* a click in the list */
+    simulate_keypress(KEY_HOME << 8);
+    CHECK(update_dialog(p));
+    t_click(30, 60 + 2 + th + 1);
+    CHECK(update_dialog(p));
+    CHECK_EQ(dlg[3].d1, 1);
+
+    /* a click on the slider's middle */
+    t_click(150 + 50, 14);
+    CHECK(update_dialog(p));
+    CHECK_EQ(dlg[4].d2, 50);
+    CHECK_EQ(slider_seen, 50);
+    simulate_keypress(KEY_RIGHT << 8);
+    CHECK(update_dialog(p));                          /* the slider has the focus now */
+    CHECK_EQ(dlg[4].d2, 51);
+    tm_z = 3;
+    CHECK(update_dialog(p));
+    CHECK_EQ(dlg[4].d2, 54);                          /* the wheel */
+
+    /* radio buttons: one of a group */
+    t_click(155, 52);
+    CHECK(update_dialog(p));
+    CHECK(dlg[7].flags & D_SELECTED);
+    CHECK(!(dlg[6].flags & D_SELECTED));
+
+    /* a check box toggles */
+    t_click(152, 62);
+    CHECK(update_dialog(p));
+    CHECK(dlg[8].flags & D_SELECTED);
+    t_click(152, 62);
+    CHECK(update_dialog(p));
+    CHECK(!(dlg[8].flags & D_SELECTED));
+
+    /* the button's shortcut (&OK) closes the dialog */
+    simulate_ukeypress('o', KEY_O);
+    CHECK(!update_dialog(p));
+    CHECK_EQ(shutdown_dialog(p), 1);
+    CHECK(active_dialog == NULL);
+
+    /* a click on the D_EXIT button closes it too, and Esc gives -1 */
+    p = init_dialog(dlg, -1);
+    t_click(20, 15);
+    CHECK(!update_dialog(p));
+    CHECK_EQ(shutdown_dialog(p), 1);
+    p = init_dialog(dlg, -1);
+    simulate_keypress(KEY_ESC << 8);
+    CHECK(!update_dialog(p));
+    CHECK_EQ(shutdown_dialog(p), -1);
+
+    /* a double click on a D_EXIT list closes on that list */
+    p = init_dialog(dlg, -1);
+    t_click(30, 60 + 3);
+    CHECK(update_dialog(p));
+    t_click(30, 60 + 3);
+    CHECK(!update_dialog(p));
+    CHECK_EQ(shutdown_dialog(p), 3);
+    CHECK_EQ(dlg[3].d1, 0);
+
+    /* placing */
+    centre_dialog(dlg);
+    CHECK_EQ(dlg[0].x, 0);
+    CHECK_EQ(dlg[0].y, 0);
+    position_dialog(dlg, 10, 20);
+    CHECK_EQ(dlg[1].x, 20);
+    CHECK_EQ(dlg[1].y, 30);
+    set_dialog_color(dlg, 3, 4);
+    CHECK_EQ(dlg[7].fg, 3);
+    CHECK_EQ(dlg[7].bg, 4);
+
+    CHECK_EQ(set_window_close_button(0), 0);
+    set_window_close_hook(NULL);
+    gui_mouse_x = NULL;
+}
+
 int main(void)
 {
     snprintf(tmpdir, sizeof(tmpdir), "%s/a4test-%d", getenv("TMPDIR") ? getenv("TMPDIR") : "/tmp", (int)getpid());
@@ -662,6 +848,7 @@ int main(void)
     test_text();
     test_sound();
     test_find();
+    test_gui();
     allegro_exit();
     CHECK(!fake.open);
     {

@@ -5,7 +5,7 @@
 #   allegro4.library   the library: bare (no startup code, no C library), its
 #                      RomTag first; 68040, soft float, -Os
 #   liballeg.a         what a game links: the public variables, the calls
-#                      made game-side (formats, floats) and a stub per call
+#                      made game-side (formats, floats, the GUI) and a stub per call
 #   tests/A4LibSmoke   opens a screen, draws, blits, reads a key, times 1 s
 #   build-amiga.sh     STOVE=dir (default ~/AmiCradle/stoves/os32-gcc16)  OUT=dir
 set -eu
@@ -54,11 +54,13 @@ GAMECFLAGS="-noixemul -m68040 $SOFT -O2 -fomit-frame-pointer -fno-delete-null-po
 # shellcheck disable=SC2086
 "$CC" $GAMECFLAGS -c -o "$OUT/obj/a4_public.o" "$HERE/src/a4_public.c"
 # shellcheck disable=SC2086
+"$CC" $GAMECFLAGS -c -o "$OUT/obj/a4_gui.o" "$HERE/src/a4_gui.c"
+# shellcheck disable=SC2086
 "$CC" $GAMECFLAGS -I"$HERE/stubs" -c -o "$OUT/obj/allegro4_open.o" "$HERE/stubs/allegro4_open.c"
 # shellcheck disable=SC2086
 "$CC" $GAMECFLAGS -I"$HERE/stubs" -c -o "$OUT/obj/allegro4_calls.o" "$HERE/stubs/allegro4_calls.c"
 rm -f "$OUT/liballeg.a"
-"$AR" rcs "$OUT/liballeg.a" "$OUT/obj/a4_public.o" "$OUT/obj/allegro4_open.o" "$OUT/obj/allegro4_calls.o"
+"$AR" rcs "$OUT/liballeg.a" "$OUT/obj/a4_public.o" "$OUT/obj/a4_gui.o" "$OUT/obj/allegro4_open.o" "$OUT/obj/allegro4_calls.o"
 echo "$OUT/liballeg.a ($(wc -c < "$OUT/liballeg.a") bytes)"
 
 # the smoke test, linked as a game links
