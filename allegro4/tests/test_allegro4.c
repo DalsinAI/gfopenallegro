@@ -861,6 +861,30 @@ static void test_compat(void)
 
 
 
+
+/* a palette as Allegro 4.0's grabber kept it: 4 bytes a colour, 6-bit (KRaptor) */
+static void test_old_palette(void)
+{
+    FILE *f = fopen(tmp("pal4.dat"), "wb");
+    DATAFILE *d;
+    int i;
+    put32(f, F_NOPACK_MAGIC);
+    put32(f, DAT_MAGIC);
+    put32(f, 1);
+    put_name(f, "PAL");
+    put32(f, DAT_PALETTE); put32(f, 1024); put32(f, 1024);
+    for (i = 0; i < 256; i++) { fputc(i & 63, f); fputc(63 - (i & 63), f); fputc(7, f); fputc(0xEE, f); }
+    fclose(f);
+    d = load_datafile(tmp("pal4.dat"));
+    CHECK(d != NULL);
+    if (d) {
+        RGB *p = (RGB *)d[0].dat;
+        CHECK_EQ(p[1].r, 1); CHECK_EQ(p[1].g, 62); CHECK_EQ(p[1].b, 7);
+        CHECK_EQ(p[255].r, 63); CHECK_EQ(p[255].g, 0); CHECK_EQ(p[255].b, 7);
+        unload_datafile(d);
+    }
+}
+
 /* ---- configuration ------------------------------------------------------------------------ */
 
 static void test_config(void)
@@ -1090,6 +1114,7 @@ static void test_menus(void)
     dp = init_dialog(dlg, -1);
     CHECK(dlg[0].w > text_length(font, "Game") + text_length(font, "Help"));
     CHECK_EQ(dlg[0].h, ih + 2);
+    tm_x = 0; tm_y = 0;                                     /* the pointer resting on the bar's edge changes nothing */
     fake.raw[0x64] = 1;                                     /* left Alt */
     simulate_keypress(KEY_G << 8);
     simulate_keypress(KEY_UP << 8);                         /* round to Quit */
@@ -1301,6 +1326,7 @@ int main(void)
     test_find();
     test_gui();
     test_compat();
+    test_old_palette();
     test_config();
     test_menus();
     test_fli();

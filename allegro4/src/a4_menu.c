@@ -89,6 +89,7 @@ struct MENU_PLAYER {
     int drawn;
     int mouse_b;                /* buttons at the last update */
     int pressed;                /* a button went down since the menu opened */
+    int mx, my, moused;         /* the pointer at the last update; moused once it has a place */
     int ret;                    /* the chosen item of this menu, -1 */
     int done;
     MENU *chosen;               /* the item chosen anywhere in the tree */
@@ -326,12 +327,18 @@ static void key_event(MENU_PLAYER *root, int a, int sc)
         if (!is_sep(&p->menu[i]) && shortcut(&p->menu[i], a)) { pick(p, i); return; }
 }
 
+/* the pointer only counts when it moves or a button changes: a pointer
+ * resting somewhere does not undo what the keys did */
 static void mouse_event(MENU_PLAYER *root)
 {
     int mx = gui_mouse_x(), my = gui_mouse_y(), b = gui_mouse_b();
     MENU_PLAYER *p, *over = NULL;
     int pressed_now = (b & ~root->mouse_b) != 0, released_now = (root->mouse_b & ~b) != 0;
+    int moved = root->moused && (mx != root->mx || my != root->my);
     root->mouse_b = b;
+    if (!root->moused) { root->moused = 1; root->mx = mx; root->my = my; }
+    root->mx = mx; root->my = my;
+    if (!moved && !pressed_now && !released_now) return;
     if (pressed_now) root->pressed = 1;
 
     for (p = root; p; p = p->child) if (inside(p, mx, my)) over = p;
@@ -341,13 +348,11 @@ static void mouse_event(MENU_PLAYER *root)
     }
     {
         int i = item_at(over, mx, my);
-        if (over->child && i != over->sel && (over->bar ? root->pressed || over->child : 1)) close_player(over->child);
-        if (i >= 0 && !is_sep(&over->menu[i])) {
-            set_sel(over, i);
-            if (over->menu[i].child && !over->child && (!over->bar || root->pressed || b)) open_child(over);
-        }
-        if (i >= 0 && !is_sep(&over->menu[i]) && !over->menu[i].child && released_now)
-            pick(over, i);
+        if (i < 0 || is_sep(&over->menu[i])) return;
+        if (over->child && i != over->sel) close_player(over->child);
+        set_sel(over, i);
+        if (over->menu[i].child && !over->child && (!over->bar || root->pressed || b)) open_child(over);
+        if (!over->menu[i].child && released_now) pick(over, i);
     }
 }
 

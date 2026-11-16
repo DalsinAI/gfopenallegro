@@ -42,7 +42,7 @@ work: "./data" and "../save" become "data" and "/save".
 
 ## Building
 
-    tests/run_tests.sh     host unit tests (444 checks; SANITIZE="-fsanitize=address,undefined")
+    tests/run_tests.sh     host unit tests (497 checks; SANITIZE="-fsanitize=address,undefined")
     build-amiga.sh         allegro4.library, liballeg.a, tests/A4LibSmoke (STOVE=, OUT=)
     tools/gen_lib.py       the library's calls from include/allegro.h
 
