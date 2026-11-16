@@ -117,6 +117,55 @@ int install_allegro(int system_id, int *errno_ptr, int (*atexit_ptr)(void (*)(vo
     return 0;
 }
 
+/* ---- calls made here: floating point, 64-bit, and memory the game frees --------- */
+
+char *_a4_strdup(const char *s)
+{
+    size_t n = strlen(s) + 1;
+    char *d = (char *)malloc(n);
+    if (d) memcpy(d, s, n);
+    return d;
+}
+
+uint64_t file_size_ex(const char *filename) { return (uint64_t)file_size(filename); }
+
+void hsv_to_rgb(float h, float s, float v, int *r, int *g, int *b)
+{
+    float f, p, q, t;
+    int i;
+    v *= 255.0f;
+    if (s == 0.0f) { *r = *g = *b = (int)(v + 0.5f); return; }
+    while (h >= 360.0f) h -= 360.0f;
+    while (h < 0.0f) h += 360.0f;
+    h /= 60.0f;
+    i = (int)h;
+    f = h - (float)i;
+    p = v * (1.0f - s);
+    q = v * (1.0f - s * f);
+    t = v * (1.0f - s * (1.0f - f));
+    switch (i) {
+    case 0: *r = (int)(v + .5f); *g = (int)(t + .5f); *b = (int)(p + .5f); break;
+    case 1: *r = (int)(q + .5f); *g = (int)(v + .5f); *b = (int)(p + .5f); break;
+    case 2: *r = (int)(p + .5f); *g = (int)(v + .5f); *b = (int)(t + .5f); break;
+    case 3: *r = (int)(p + .5f); *g = (int)(q + .5f); *b = (int)(v + .5f); break;
+    case 4: *r = (int)(t + .5f); *g = (int)(p + .5f); *b = (int)(v + .5f); break;
+    default: *r = (int)(v + .5f); *g = (int)(p + .5f); *b = (int)(q + .5f); break;
+    }
+}
+
+void rgb_to_hsv(int r, int g, int b, float *h, float *s, float *v)
+{
+    int mx = MAX(r, MAX(g, b)), mn = MIN(r, MIN(g, b));
+    float d = (float)(mx - mn);
+    *v = (float)mx / 255.0f;
+    *s = mx ? d / (float)mx : 0.0f;
+    if (d == 0.0f) { *h = 0.0f; return; }
+    if (mx == r) *h = 60.0f * ((float)(g - b) / d);
+    else if (mx == g) *h = 60.0f * (2.0f + (float)(b - r) / d);
+    else *h = 60.0f * (4.0f + (float)(r - g) / d);
+    if (*h < 0.0f) *h += 360.0f;
+}
+
 /* ---- calls with a format ---------------------------------------------------------- */
 
 int uvszprintf(char *buf, int size, const char *format, va_list args) { return vsnprintf(buf, (size_t)size, format, args); }

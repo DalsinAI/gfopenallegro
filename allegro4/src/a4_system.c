@@ -21,7 +21,6 @@ char *a4_strdup0(const char *s)
     if (d) memcpy(d, s, n);
     return d;
 }
-char *_a4_strdup(const char *s) { return a4_strdup0(s); }
 
 /* the stubs pass the game's variables; the host build passes its own */
 int a4_install(struct a4_public *pub, int system_id)
@@ -332,7 +331,6 @@ int file_exists(const char *filename, int attrib, int *aret)
 }
 int exists(const char *filename) { return file_exists(filename, FA_ARCH | FA_RDONLY, NULL); }
 long file_size(const char *filename) { long s = 0; if (!a4_os_stat(filename, NULL, &s, NULL)) return 0; return s; }
-uint64_t file_size_ex(const char *filename) { return (uint64_t)file_size(filename); }
 time_t file_time(const char *filename) { long t = 0; a4_os_stat(filename, NULL, NULL, &t); return (time_t)t; }
 int delete_file(const char *filename) { return a4_os_delete(filename) == 0 ? 0 : -1; }
 
