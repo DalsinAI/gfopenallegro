@@ -56,11 +56,15 @@ GAMECFLAGS="-noixemul -m68040 $SOFT -O2 -fomit-frame-pointer -fno-delete-null-po
 # shellcheck disable=SC2086
 "$CC" $GAMECFLAGS -c -o "$OUT/obj/a4_gui.o" "$HERE/src/a4_gui.c"
 # shellcheck disable=SC2086
+"$CC" $GAMECFLAGS -c -o "$OUT/obj/a4_menu.o" "$HERE/src/a4_menu.c"
+# shellcheck disable=SC2086
+"$CC" $GAMECFLAGS -c -o "$OUT/obj/a4_fli.o" "$HERE/src/a4_fli.c"
+# shellcheck disable=SC2086
 "$CC" $GAMECFLAGS -I"$HERE/stubs" -c -o "$OUT/obj/allegro4_open.o" "$HERE/stubs/allegro4_open.c"
 # shellcheck disable=SC2086
 "$CC" $GAMECFLAGS -I"$HERE/stubs" -c -o "$OUT/obj/allegro4_calls.o" "$HERE/stubs/allegro4_calls.c"
 rm -f "$OUT/liballeg.a"
-"$AR" rcs "$OUT/liballeg.a" "$OUT/obj/a4_public.o" "$OUT/obj/a4_gui.o" "$OUT/obj/allegro4_open.o" "$OUT/obj/allegro4_calls.o"
+"$AR" rcs "$OUT/liballeg.a" "$OUT/obj/a4_public.o" "$OUT/obj/a4_gui.o" "$OUT/obj/a4_menu.o" "$OUT/obj/a4_fli.o" "$OUT/obj/allegro4_open.o" "$OUT/obj/allegro4_calls.o"
 echo "$OUT/liballeg.a ($(wc -c < "$OUT/liballeg.a") bytes)"
 
 # the smoke test, linked as a game links

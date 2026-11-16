@@ -148,6 +148,74 @@ void _draw_scrollable_frame(DIALOG *d, int listsize, int offset, int height, int
 int set_window_close_button(int enable);
 void set_window_close_hook(void (*proc)(void));
 
+
+/* ---- menus (a4_menu.c) ------------------------------------------------------------------ */
+
+typedef struct MENU {
+    char *text;                     /* "&File", "Open\tCtrl+O"; "" is a separator; NULL ends the list */
+    int (*proc)(void);              /* called when the item is chosen */
+    struct MENU *child;             /* a menu of its own, opened from this item */
+    int flags;                      /* D_SELECTED (a tick), D_DISABLED */
+    void *dp;
+} MENU;
+
+typedef struct MENU_PLAYER MENU_PLAYER;
+
+extern MENU *active_menu;           /* the item whose proc is being called */
+extern void (*gui_menu_draw_menu)(int x, int y, int w, int h);
+extern void (*gui_menu_draw_menu_item)(MENU *m, int x, int y, int w, int h, int bar, int sel);
+
+int do_menu(MENU *menu, int x, int y);
+MENU_PLAYER *init_menu(MENU *menu, int x, int y);
+int update_menu(MENU_PLAYER *player);
+int shutdown_menu(MENU_PLAYER *player);
+int d_menu_proc(int msg, DIALOG *d, int c);
+
+/* ---- what Allegro's internal header gives GUI code (allegro/internal/aintern.h) ---------- */
+
+extern int gui_mouse_focus;         /* kept; this dialog engine gives focus on a click */
+/* the objects alert() and the selectors are made of: games set their own;
+ * allegro4.library's alert draws its own look and does not read them */
+extern int (*gui_shadow_box_proc)(int msg, DIALOG *d, int c);
+extern int (*gui_ctext_proc)(int msg, DIALOG *d, int c);
+extern int (*gui_button_proc)(int msg, DIALOG *d, int c);
+extern int (*gui_edit_proc)(int msg, DIALOG *d, int c);
+extern int (*gui_list_proc)(int msg, DIALOG *d, int c);
+extern int (*gui_text_list_proc)(int msg, DIALOG *d, int c);
+
+/* ---- small game-side calls ---------------------------------------------------------------- */
+
+extern int *palette_color;          /* colour index of palette entry i: i itself in 8-bit */
+extern FONT *_a4_default_font;      /* the font allegro_init set up */
+#define _default_font (*_a4_default_font)
+const char *get_config_text(const char *msg);   /* no language files: msg itself */
+/* the screen mode selector: one dialog with the sizes this screen can open;
+ * the card is always GFX_AUTODETECT and the depth 8 */
+int gfx_mode_select(int *card, int *w, int *h);
+int gfx_mode_select_ex(int *card, int *w, int *h, int *color_depth);
+
+/* ---- FLI and FLC animations (a4_fli.c) ---------------------------------------------------- */
+
+#define FLI_OK          0
+#define FLI_EOF         -1
+#define FLI_ERROR       -2
+#define FLI_NOT_OPEN    -3
+
+extern BITMAP *fli_bitmap;          /* the current frame */
+extern PALETTE fli_palette;
+extern int fli_bmp_dirty_from, fli_bmp_dirty_to;    /* rows changed by the last frame */
+extern int fli_pal_dirty_from, fli_pal_dirty_to;    /* palette entries changed */
+extern int fli_frame;               /* frames read since open */
+extern volatile int fli_timer;      /* goes up once per frame time while a FLI is open */
+
+int open_fli(const char *filename);
+int open_memory_fli(void *fli_data);
+void close_fli(void);
+int next_fli_frame(int loop);
+void reset_fli_variables(void);
+int play_fli(const char *filename, BITMAP *bmp, int loop, int (*callback)(void));
+int play_memory_fli(void *fli_data, BITMAP *bmp, int loop, int (*callback)(void));
+
 #ifdef __cplusplus
 }
 #endif

@@ -31,6 +31,9 @@ char cpu_vendor[32] = "Motorola";
 BITMAP *screen;
 int _a4_screen_w, _a4_screen_h;
 FONT *font;
+FONT *_a4_default_font;
+static int palette_color8[256];
+int *palette_color = palette_color8;
 int allegro_404_char = '^';
 volatile char key[KEY_MAX];
 volatile int key_shifts;
@@ -122,6 +125,11 @@ int install_allegro(int system_id, int *errno_ptr, int (*atexit_ptr)(void (*)(vo
     pub.default_palette = default_palette;
     pub.desktop_palette = desktop_palette;
     if (a4_install(&pub, system_id) != 0) return -1;
+    {
+        int i;
+        for (i = 0; i < 256; i++) palette_color8[i] = i;
+    }
+    _a4_default_font = font;
     if (atexit_ptr && !exit_registered) { exit_registered = 1; atexit_ptr(allegro_exit); }
     return 0;
 }
