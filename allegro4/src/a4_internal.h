@@ -52,6 +52,7 @@ struct a4_public {
     int *color_depth;
     RGB *default_palette;                   /* the game's copy: set at set_gfx_mode */
     RGB *desktop_palette;
+    int *palette_color;                     /* the game's palette_color table (256) */
 };
 
 #ifdef A4_LIBRARY
@@ -88,6 +89,7 @@ struct a4_public {
 #define _color_depth (*A4P->color_depth)
 #define default_palette (A4P->default_palette)
 #define desktop_palette (A4P->desktop_palette)
+#define palette_color (A4P->palette_color)
 #endif
 
 typedef struct a4_file a4_file;
@@ -233,7 +235,15 @@ struct a4_state {
     const RGB *selected_palette;
     RGB selected_copy[PAL_SIZE];
     int has_selected;
+    /* truecolour */
+    int blend_kind;                         /* A4_BLEND_* */
+    int blend_r, blend_g, blend_b, blend_a;
+    unsigned char *tc_lut;                  /* a 15/16-bit screen's pixel -> shown index */
+    int mixer_quality;
 };
+
+enum { A4_BLEND_TRANS, A4_BLEND_ALPHA, A4_BLEND_WRITE_ALPHA, A4_BLEND_ADD, A4_BLEND_BURN, A4_BLEND_DIFFERENCE,
+       A4_BLEND_DODGE, A4_BLEND_INVERT, A4_BLEND_MULTIPLY, A4_BLEND_SCREEN };
 
 #ifdef A4_LIBRARY
 #define A4S (a4_state_ptr)
@@ -289,5 +299,51 @@ void a4_config_shutdown(void);
 
 /* 6-bit palette in, 8-bit out */
 static inline int a4_pal63to255(int c) { return (c << 2) | (c >> 4); }
+
+/* ---- pixels at any depth (a4_bitmap.c, a4_palette.c) --------------------------- */
+
+static inline int a4_bdepth(const BITMAP *b) { return b->vtable ? b->vtable->color_depth : 8; }
+static inline int a4_bpp(int depth) { return depth == 8 ? 1 : depth <= 16 ? 2 : depth == 24 ? 3 : 4; }
+static inline uint32_t a4_maskc(int depth)
+{
+    return depth == 8 ? MASK_COLOR_8 : depth == 15 ? MASK_COLOR_15 : depth == 16 ? MASK_COLOR_16 : MASK_COLOR_32;
+}
+static inline uint32_t a4_rd(const unsigned char *row, int x, int depth)
+{
+    switch (depth) {
+    case 8: return row[x];
+    case 15: case 16: return ((const uint16_t *)row)[x];
+    case 24: { const unsigned char *p = row + x * 3; return ((uint32_t)p[0] << 16) | ((uint32_t)p[1] << 8) | p[2]; }
+    default: return ((const uint32_t *)row)[x];
+    }
+}
+static inline void a4_wr(unsigned char *row, int x, int depth, uint32_t c)
+{
+    switch (depth) {
+    case 8: row[x] = (unsigned char)c; break;
+    case 15: case 16: ((uint16_t *)row)[x] = (uint16_t)c; break;
+    case 24: { unsigned char *p = row + x * 3; p[0] = (unsigned char)(c >> 16); p[1] = (unsigned char)(c >> 8); p[2] = (unsigned char)c; break; }
+    default: ((uint32_t *)row)[x] = c; break;
+    }
+}
+GFX_VTABLE *a4_vtable(int depth);          /* NULL for a depth there is none of */
+int a4_valid_depth(int depth);
+/* colours between depths; an 8-bit colour is a palette index (the selected
+ * palette, else the shown one) */
+uint32_t a4_pack(int depth, int r, int g, int b);
+void a4_unpack(int depth, uint32_t c, int *r, int *g, int *b);
+uint32_t a4_convert(uint32_t c, int from, int to);
+void a4_expand_palette(int depth, const RGB *pal, uint32_t out[256]);   /* pal NULL: the current */
+/* the blender on x (source) over y (destination) by n (0-255) */
+uint32_t a4_blend(int depth, uint32_t x, uint32_t y, int n);
+/* a copy of src at depth (src itself when it is that depth already); keeps the mask */
+BITMAP *a4_bitmap_to_depth(BITMAP *src, int depth, const RGB *pal);
+void a4_update_palette_color(void);
+/* a loaded picture to the game's colour depth, as set_color_conversion
+ * allows (pal: its own palette, for an 8-bit one); frees b when it converts */
+BITMAP *a4_fixup_loaded(BITMAP *b, const RGB *pal);
+/* a truecolour screen in the 8-bit frame (a4_gfx.c) */
+void a4_cube_palette(acgame_rgb8 pal[256]);
+void a4_cube_row(unsigned char *out, const unsigned char *row, int w, int depth, const unsigned char *lut);
 
 #endif

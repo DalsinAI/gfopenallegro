@@ -1,9 +1,10 @@
 /* Copyright (c) 2026 AmiCradle Team. MIT licence (see allegro4/LICENSE).
  * SPDX-License-Identifier: MIT
  *
- * Picture files: PCX (8-bit RLE, and 24-bit matched to the palette) and
- * BMP (1/4/8-bit, uncompressed or RLE8, and 24/32-bit matched to the
- * palette), loaded and saved as 8-bit bitmaps. load_bitmap picks by the
+ * Picture files: PCX (8-bit RLE and 24-bit) and BMP (1/4/8-bit,
+ * uncompressed or RLE8, and 24/32-bit), loaded at their own depth and then
+ * converted to the game's colour depth as set_color_conversion allows;
+ * saved as 8-bit (PCX, BMP) or 24-bit (BMP of a truecolour bitmap). load_bitmap picks by the
  * name's extension; register_bitmap_file_type adds others.
  */
 #include "a4_internal.h"
@@ -28,7 +29,7 @@ BITMAP *load_pcx_pf(PACKFILE *f, RGB *pal)
     bpl = pack_igetw(f);
     pack_fseek(f, 60);
     if (planes != 1 && planes != 3) return NULL;
-    b = create_bitmap(w, h);
+    b = create_bitmap_ex(planes == 1 ? 8 : 24, w, h);
     row = (unsigned char *)a4_malloc((size_t)bpl * (size_t)planes);
     if (!b || !row) { destroy_bitmap(b); a4_free(row); return NULL; }
     for (y = 0; y < h; y++) {
@@ -44,26 +45,27 @@ BITMAP *load_pcx_pf(PACKFILE *f, RGB *pal)
         }
         if (planes == 1) memcpy(b->line[y], row, (size_t)w);
         else {
-            /* 24-bit: matched to the palette in use */
-            RGB cur[256];
-            get_palette(cur);
             for (p = 0; p < w; p++)
-                b->line[y][p] = (unsigned char)bestfit_color(cur, row[p] >> 2, row[bpl + p] >> 2, row[2 * bpl + p] >> 2);
+                a4_wr(b->line[y], p, 24, (uint32_t)row[p] << 16 | (uint32_t)row[bpl + p] << 8 | row[2 * bpl + p]);
         }
     }
     a4_free(row);
     if (planes == 1) {
         /* the palette: 769 bytes from the end, after a 12 */
+        RGB own[256];
         while ((c = pack_getc(f)) != EOF && c != 12) ;
-        if (c == 12 && pal)
-            for (i = 0; i < 256; i++) {
-                pal[i].r = (unsigned char)(pack_getc(f) >> 2);
-                pal[i].g = (unsigned char)(pack_getc(f) >> 2);
-                pal[i].b = (unsigned char)(pack_getc(f) >> 2);
-                pal[i].filler = 0;
-            }
-    } else if (pal) get_palette(pal);
-    return b;
+        if (c != 12) return a4_fixup_loaded(b, NULL);
+        for (i = 0; i < 256; i++) {
+            own[i].r = (unsigned char)(pack_getc(f) >> 2);
+            own[i].g = (unsigned char)(pack_getc(f) >> 2);
+            own[i].b = (unsigned char)(pack_getc(f) >> 2);
+            own[i].filler = 0;
+        }
+        if (pal) memcpy(pal, own, sizeof(own));
+        return a4_fixup_loaded(b, own);
+    }
+    if (pal) get_palette(pal);
+    return a4_fixup_loaded(b, NULL);
 }
 
 BITMAP *load_pcx(const char *filename, RGB *pal)
@@ -80,6 +82,15 @@ int save_pcx_pf(PACKFILE *f, BITMAP *b, const RGB *pal)
 {
     int x, y, i;
     RGB cur[256];
+    if (a4_bdepth(b) != 8) {
+        /* PCX is saved 8-bit: a truecolour bitmap is matched to the palette */
+        BITMAP *e = a4_bitmap_to_depth(b, 8, NULL);
+        int r;
+        if (!e) return -1;
+        r = save_pcx_pf(f, e, pal);
+        destroy_bitmap(e);
+        return r;
+    }
     if (!pal) { get_palette(cur); pal = cur; }
     pack_putc(10, f); pack_putc(5, f); pack_putc(1, f); pack_putc(8, f);
     pack_iputw(0, f); pack_iputw(0, f); pack_iputw(b->w - 1, f); pack_iputw(b->h - 1, f);
@@ -162,7 +173,7 @@ BITMAP *load_bmp_pf(PACKFILE *f, RGB *pal)
         if (pal) memcpy(pal, cur, sizeof(cur));
         if (offbits > 14 + hsize) pack_fseek(f, (int)(offbits - 14 - hsize));
     }
-    b = create_bitmap((int)w, (int)h);
+    b = create_bitmap_ex(bits <= 8 ? 8 : 24, (int)w, (int)h);
     if (!b) return NULL;
     if (comp == 1 && bits == 8) {
         /* RLE8 */
@@ -180,7 +191,7 @@ BITMAP *load_bmp_pf(PACKFILE *f, RGB *pal)
                 if (c & 1) pack_getc(f);
             }
         }
-        return b;
+        return a4_fixup_loaded(b, cur);
     }
     for (y = 0; y < h; y++) {
         unsigned char *row = b->line[flip ? h - 1 - y : y];
@@ -200,12 +211,12 @@ BITMAP *load_bmp_pf(PACKFILE *f, RGB *pal)
                 int bl = pack_getc(f), g = pack_getc(f), r = pack_getc(f);
                 if (bpp == 4) pack_getc(f);
                 used += bpp;
-                row[x] = (unsigned char)(r == 255 && g == 0 && bl == 255 ? 0 : bestfit_color(cur, r >> 2, g >> 2, bl >> 2));
+                a4_wr(row, x, 24, (uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)bl);
             }
         }
         if (rowbytes > used) pack_fseek(f, (int)(rowbytes - used));
     }
-    return b;
+    return a4_fixup_loaded(b, bits <= 8 ? cur : NULL);
 }
 
 BITMAP *load_bmp(const char *filename, RGB *pal)
@@ -218,11 +229,35 @@ BITMAP *load_bmp(const char *filename, RGB *pal)
     return b;
 }
 
+static int save_bmp24(PACKFILE *f, BITMAP *b)
+{
+    int x, y, d = a4_bdepth(b);
+    long rowbytes = ((long)b->w * 3 + 3) & ~3L;
+    pack_iputw(0x4D42, f);
+    pack_iputl(54 + rowbytes * b->h, f);
+    pack_iputw(0, f); pack_iputw(0, f);
+    pack_iputl(54, f);
+    pack_iputl(40, f); pack_iputl(b->w, f); pack_iputl(b->h, f);
+    pack_iputw(1, f); pack_iputw(24, f);
+    pack_iputl(0, f); pack_iputl(rowbytes * b->h, f);
+    pack_iputl(0xB12, f); pack_iputl(0xB12, f); pack_iputl(0, f); pack_iputl(0, f);
+    for (y = b->h - 1; y >= 0; y--) {
+        for (x = 0; x < b->w; x++) {
+            int r, g, bl;
+            a4_unpack(d, a4_rd(b->line[y], x, d), &r, &g, &bl);
+            pack_putc(bl, f); pack_putc(g, f); pack_putc(r, f);
+        }
+        for (x = b->w * 3; x < rowbytes; x++) pack_putc(0, f);
+    }
+    return pack_ferror(f) ? -1 : 0;
+}
+
 int save_bmp_pf(PACKFILE *f, BITMAP *b, const RGB *pal)
 {
     int x, y, i;
     long rowbytes = ((long)b->w + 3) & ~3L;
     RGB cur[256];
+    if (a4_bdepth(b) != 8) return save_bmp24(f, b);
     if (!pal) { get_palette(cur); pal = cur; }
     pack_iputw(0x4D42, f);
     pack_iputl(54 + 1024 + rowbytes * b->h, f);

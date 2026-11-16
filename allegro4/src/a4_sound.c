@@ -392,3 +392,11 @@ void midi_out(unsigned char *data, int length) { (void)data; (void)length; }   /
 void midi_resume(void) {}
 int midi_seek(int target) { midi_pos = target; return 0; }
 int get_midi_length(MIDI *m) { (void)m; return 0; }
+
+/* the mixer: ACGame mixes; the quality is kept for the game to read back */
+int get_mixer_quality(void) { return A4S->mixer_quality; }
+void set_mixer_quality(int quality) { A4S->mixer_quality = quality < 0 ? 0 : quality > 2 ? 2 : quality; }
+int get_mixer_voices(void) { return A4_VOICES; }
+int get_mixer_frequency(void) { return MIX_RATE; }
+int get_mixer_bits(void) { return 16; }
+int get_mixer_channels(void) { return 2; }

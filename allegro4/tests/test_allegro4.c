@@ -1001,6 +1001,258 @@ static void test_config(void)
     CHECK(strstr(t, "fire = 58\n") != NULL);
 }
 
+/* truecolour: Atomic Tanks (16 or 32-bit) and Rafkill (16-bit) */
+static int near(int a, int b) { return a - b <= 2 && b - a <= 2; }
+static int near8(int a, int b) { return a - b <= 8 && b - a <= 8; }   /* 5 bits a gun */
+
+static void test_truecolour(void)
+{
+    BITMAP *a, *b, *spr;
+    RLE_SPRITE *rle;
+    RGB red = { 63, 0, 0, 0 };
+    int c, i;
+
+    set_color_conversion(COLORCONV_TOTAL);              /* Allegro's own default */
+    /* the formats */
+    CHECK_EQ(makecol15(255, 0, 255), MASK_COLOR_15);
+    CHECK_EQ(makecol16(255, 0, 255), MASK_COLOR_16);
+    CHECK_EQ(makecol32(255, 0, 255), MASK_COLOR_32);
+    CHECK_EQ(makecol24(1, 2, 3), 0x010203);
+    CHECK_EQ(makeacol32(1, 2, 3, 4), 0x04010203);
+    CHECK_EQ(geta32(makeacol32(1, 2, 3, 200)), 200);
+    c = makecol16(200, 100, 50);
+    CHECK(near8(getr16(c), 200) && near8(getg16(c), 100) && near8(getb16(c), 50));
+    c = makecol15(200, 100, 50);
+    CHECK(near8(getr15(c), 200) && near8(getg15(c), 100) && near8(getb15(c), 50));
+    CHECK_EQ(getr16(makecol16(255, 255, 255)), 255);
+    CHECK_EQ(_rgb_scale_5[31], 255);
+    CHECK_EQ(_rgb_scale_6[63], 255);
+    CHECK_EQ(_rgb_r_shift_16, 11);
+
+    /* bitmaps at the colour depth */
+    set_color_depth(16);
+    CHECK_EQ(get_color_depth(), 16);
+    CHECK_EQ(makecol(255, 0, 0), makecol16(255, 0, 0));
+    CHECK(near(getg(makecol(10, 120, 30)), 120));
+    a = create_bitmap(40, 30);
+    CHECK(a != NULL);
+    if (!a) return;
+    CHECK_EQ(bitmap_color_depth(a), 16);
+    CHECK_EQ(bitmap_mask_color(a), MASK_COLOR_16);
+    CHECK_EQ(a->vtable->color_depth, 16);
+    clear_to_color(a, makecol(0, 0, 255));
+    CHECK_EQ(getpixel(a, 39, 29), makecol16(0, 0, 255));
+    putpixel(a, 3, 4, makecol(255, 255, 0));
+    CHECK_EQ(getpixel(a, 3, 4), makecol16(255, 255, 0));
+    _putpixel16(a, 5, 5, 0x1234);
+    CHECK_EQ(_getpixel16(a, 5, 5), 0x1234);
+    CHECK_EQ(getpixel(a, 40, 0), -1);
+    rectfill(a, 10, 10, 19, 12, makecol(0, 255, 0));
+    CHECK_EQ(getpixel(a, 19, 12), makecol16(0, 255, 0));
+    CHECK_EQ(getpixel(a, 20, 12), makecol16(0, 0, 255));
+    hline(a, 0, 20, 39, makecol(255, 255, 255));
+    CHECK_EQ(getpixel(a, 39, 20), 0xFFFF);
+    floodfill(a, 15, 11, makecol(255, 0, 0));
+    CHECK_EQ(getpixel(a, 10, 10), makecol16(255, 0, 0));
+    CHECK_EQ(getpixel(a, 9, 10), makecol16(0, 0, 255));
+    {
+        BITMAP *sub = create_sub_bitmap(a, 10, 10, 5, 5);
+        CHECK(sub && bitmap_color_depth(sub) == 16);
+        if (sub) { putpixel(sub, 1, 1, 7); destroy_bitmap(sub); }
+        CHECK_EQ(getpixel(a, 11, 11), 7);
+    }
+
+    /* 24 and 32-bit pixels */
+    b = create_bitmap_ex(24, 8, 8);
+    CHECK(b && bitmap_color_depth(b) == 24);
+    if (b) {
+        putpixel(b, 7, 7, 0x123456);
+        CHECK_EQ(getpixel(b, 7, 7), 0x123456);
+        CHECK_EQ(_getpixel24(b, 7, 7), 0x123456);
+        CHECK_EQ(b->line[7][21], 0x12);                     /* R, G, B in memory */
+        destroy_bitmap(b);
+    }
+    b = create_bitmap_ex(32, 40, 30);
+    CHECK(b != NULL);
+    if (!b) { destroy_bitmap(a); return; }
+    circlefill(b, 20, 15, 5, makecol32(9, 8, 7));
+    CHECK_EQ(_getpixel32(b, 20, 15), makecol32(9, 8, 7));
+    CHECK_EQ(getpixel(b, 0, 0), 0);
+
+    /* blits between depths */
+    blit(a, b, 0, 0, 0, 0, 40, 30);
+    c = getpixel(b, 3, 4);
+    CHECK(near(getr32(c), 255) && near(getg32(c), 255) && getb32(c) == 0);
+    CHECK_EQ(getpixel(b, 39, 29), makecol32(0, 0, 255));
+    set_color(5, &red);
+    {
+        BITMAP *e = create_bitmap_ex(8, 4, 4);
+        clear_to_color(e, 5);
+        blit(e, a, 0, 0, 0, 0, 4, 4);
+        CHECK_EQ(getpixel(a, 0, 0), makecol16(255, 0, 0));
+        /* an 8-bit sprite on a truecolour bitmap: 0 is clear, the rest through the palette */
+        putpixel(e, 1, 1, 0);
+        clear_to_color(a, 0);
+        draw_sprite(a, e, 0, 0);
+        CHECK_EQ(getpixel(a, 1, 1), 0);
+        CHECK_EQ(getpixel(a, 2, 2), makecol16(255, 0, 0));
+        destroy_bitmap(e);
+    }
+    CHECK_EQ(palette_color[5], makecol16(255, 0, 0));    /* palette_color follows the depth */
+
+    /* sprites with the mask */
+    spr = create_bitmap(4, 4);
+    clear_to_color(spr, MASK_COLOR_16);
+    putpixel(spr, 2, 2, makecol(255, 255, 255));
+    clear_to_color(a, makecol(0, 0, 0));
+    draw_sprite(a, spr, 10, 10);
+    CHECK_EQ(getpixel(a, 12, 12), 0xFFFF);
+    CHECK_EQ(getpixel(a, 11, 11), 0);
+    masked_blit(spr, a, 0, 0, 20, 20, 4, 4);
+    CHECK_EQ(getpixel(a, 22, 22), 0xFFFF);
+    CHECK_EQ(getpixel(a, 21, 21), 0);
+    draw_sprite_h_flip(a, spr, 0, 20);
+    CHECK_EQ(getpixel(a, 1, 22), 0xFFFF);
+    stretch_sprite(a, spr, 30, 0, 8, 8);
+    CHECK_EQ(getpixel(a, 34, 4), 0xFFFF);
+    CHECK_EQ(getpixel(a, 30, 0), 0);
+    rotate_sprite(a, spr, 0, 0, itofix(64));
+    rle = get_rle_sprite(spr);
+    CHECK(rle && rle->color_depth == 16);
+    if (rle) {
+        clear_to_color(a, makecol(0, 0, 255));
+        draw_rle_sprite(a, rle, 5, 5);
+        CHECK_EQ(getpixel(a, 7, 7), 0xFFFF);
+        CHECK_EQ(getpixel(a, 6, 6), makecol16(0, 0, 255));
+        destroy_rle_sprite(rle);
+    }
+
+    /* blenders */
+    clear_to_color(a, 0);
+    set_trans_blender(0, 0, 0, 128);
+    draw_trans_sprite(a, spr, 0, 0);
+    c = getpixel(a, 2, 2);
+    CHECK(getr16(c) > 110 && getr16(c) < 140 && near(getr16(c), getb16(c)));
+    CHECK_EQ(getpixel(a, 1, 1), 0);
+    drawing_mode(DRAW_MODE_TRANS, NULL, 0, 0);
+    clear_to_color(b, makecol32(200, 0, 0));
+    set_trans_blender(0, 0, 0, 64);
+    rectfill(b, 0, 0, 3, 3, makecol32(0, 0, 200));
+    c = getpixel(b, 1, 1);
+    CHECK(near(getr32(c), 150) && near(getb32(c), 50));
+    solid_mode();
+    set_add_blender(0, 0, 0, 255);
+    clear_to_color(b, makecol32(100, 100, 100));
+    {
+        BITMAP *s32 = create_bitmap_ex(32, 2, 2);
+        clear_to_color(s32, makecol32(100, 50, 0));
+        draw_trans_sprite(b, s32, 0, 0);
+        CHECK_EQ(getpixel(b, 1, 1), makecol32(200, 150, 100));
+        set_multiply_blender(0, 0, 0, 255);
+        clear_to_color(b, makecol32(128, 128, 128));
+        clear_to_color(s32, makecol32(255, 128, 0));
+        draw_trans_sprite(b, s32, 0, 0);
+        c = getpixel(b, 0, 0);
+        CHECK(near(getr32(c), 128) && near(getg32(c), 64) && getb32(c) == 0);
+        set_screen_blender(0, 0, 0, 255);
+        clear_to_color(b, makecol32(128, 0, 0));
+        clear_to_color(s32, makecol32(128, 0, 0));
+        draw_trans_sprite(b, s32, 0, 0);
+        CHECK(near(getr32(getpixel(b, 0, 0)), 192));
+        /* the alpha blender: a 32-bit sprite's own alpha */
+        set_alpha_blender();
+        clear_to_color(b, 0);
+        clear_to_color(s32, makeacol32(255, 255, 255, 64));
+        draw_trans_sprite(b, s32, 0, 0);
+        CHECK(near(getr32(getpixel(b, 0, 0)), 64));
+        /* lit: towards the blender's colour by the light level */
+        set_trans_blender(255, 0, 0, 0);
+        clear_to_color(s32, makecol32(0, 0, 255));
+        clear_to_color(b, 0);
+        draw_lit_sprite(b, s32, 0, 0, 255);
+        CHECK_EQ(getpixel(b, 0, 0), makecol32(255, 0, 0));
+        draw_lit_sprite(b, s32, 0, 0, 0);
+        CHECK_EQ(getpixel(b, 0, 0), makecol32(0, 0, 255));
+        destroy_bitmap(s32);
+    }
+    set_trans_blender(0, 0, 0, 255);
+
+    /* text in truecolour */
+    clear_to_color(a, 0);
+    textout_ex(a, font, "I", 0, 0, makecol(0, 255, 0), makecol(0, 0, 255));
+    {
+        int on = 0, bg = 0, y, x;
+        for (y = 0; y < 8; y++) for (x = 0; x < 8; x++) {
+            int p = getpixel(a, x, y);
+            if (p == makecol16(0, 255, 0)) on++;
+            else if (p == makecol16(0, 0, 255)) bg++;
+        }
+        CHECK(on > 0 && bg > 0 && on + bg == 64);
+    }
+
+    /* pictures: a 32-bit one saved as a 24-bit BMP comes back at the depth asked for */
+    clear_to_color(b, makecol32(10, 20, 30));
+    putpixel(b, 0, 0, makecol32(250, 0, 5));
+    CHECK_EQ(save_bmp(tmp("tc.bmp"), b, NULL), 0);
+    set_color_depth(32);
+    {
+        BITMAP *l = load_bmp(tmp("tc.bmp"), NULL);
+        CHECK(l && bitmap_color_depth(l) == 32 && l->w == 40);
+        if (l) { CHECK_EQ(getpixel(l, 0, 0), makecol32(250, 0, 5)); CHECK_EQ(getpixel(l, 5, 5), makecol32(10, 20, 30)); destroy_bitmap(l); }
+        set_color_depth(16);
+        l = load_bitmap(tmp("tc.bmp"), NULL);
+        CHECK(l && bitmap_color_depth(l) == 16);
+        if (l) { CHECK_EQ(getpixel(l, 5, 5), makecol16(10, 20, 30)); destroy_bitmap(l); }
+        set_color_conversion(COLORCONV_NONE);
+        l = load_bitmap(tmp("tc.bmp"), NULL);
+        CHECK(l && bitmap_color_depth(l) == 24);
+        destroy_bitmap(l);
+        set_color_conversion(COLORCONV_TOTAL);
+    }
+
+    /* a 16-bit screen, shown through the 6x7x6 cube on the 8-bit one */
+    CHECK_EQ(set_gfx_mode(GFX_AUTODETECT, 320, 200, 0, 0), 0);
+    CHECK_EQ(bitmap_color_depth(screen), 16);
+    clear_to_color(screen, makecol(255, 0, 0));
+    putpixel(screen, 1, 0, makecol(255, 255, 255));
+    putpixel(screen, 2, 0, makecol(0, 128, 0));
+    vsync();
+    CHECK_EQ(fake.shown[0], 210);                        /* red: 5 * 42 */
+    CHECK_EQ(fake.shown[1], 251);                        /* white */
+    CHECK_EQ(fake.shown[2], 18);                         /* green 3 of 6: 3 * 6 */
+    CHECK(fake.shown_pal[210].r == 255 && fake.shown_pal[210].g == 0 && fake.shown_pal[210].b == 0);
+    CHECK(fake.shown_pal[251].r == 255 && fake.shown_pal[251].g == 255);
+    set_palette(default_palette);                        /* does not touch the cube */
+    CHECK(fake.shown_pal[210].r == 255 && fake.shown_pal[210].g == 0);
+    {
+        GFX_MODE_LIST *ml = get_gfx_mode_list(GFX_AUTODETECT);
+        int has16 = 0;
+        for (i = 0; ml && i < ml->num_modes; i++) if (ml->mode[i].bpp == 16 && ml->mode[i].width == 320) has16 = 1;
+        CHECK(has16);
+        destroy_gfx_mode_list(ml);
+    }
+    set_color_depth(32);
+    CHECK_EQ(set_gfx_mode(GFX_AUTODETECT, 320, 200, 0, 0), 0);
+    CHECK_EQ(bitmap_color_depth(screen), 32);
+    clear_to_color(screen, makecol(0, 0, 255));
+    vsync();
+    CHECK_EQ(fake.shown[100], 5);                        /* blue */
+    set_gfx_mode(GFX_TEXT, 0, 0, 0, 0);
+
+    /* mixer and 8-bit again */
+    set_mixer_quality(1);
+    CHECK_EQ(get_mixer_quality(), 1);
+    CHECK(get_mixer_voices() > 0);
+    destroy_bitmap(spr);
+    destroy_bitmap(a);
+    destroy_bitmap(b);
+    set_color_depth(8);
+    CHECK_EQ(palette_color[5], 5);
+    a = create_bitmap(1, 1);
+    CHECK_EQ(bitmap_color_depth(a), 8);
+    destroy_bitmap(a);
+}
+
 int main(void)
 {
     snprintf(tmpdir, sizeof(tmpdir), "%s/a4test-%d", getenv("TMPDIR") ? getenv("TMPDIR") : "/tmp", (int)getpid());
@@ -1025,6 +1277,7 @@ int main(void)
     test_compat();
     test_fonts_more();
     test_config();
+    test_truecolour();
     allegro_exit();
     CHECK(!fake.open);
     {

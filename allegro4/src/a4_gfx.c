@@ -3,7 +3,8 @@
  *
  * The screen. set_gfx_mode opens an ACGame 8-bit screen (AGA or RTG, the
  * system's choice unless the game names one) and makes `screen` a bitmap
- * in Fast RAM. Drawing on it marks it; it is shown through ACGame's frame
+ * in Fast RAM at the game's colour depth. A truecolour screen is shown on
+ * the 8-bit one through a fixed 6x7x6 colour cube (252 colours). Drawing on it marks it; it is shown through ACGame's frame
  * (one copy, then ACGame's c2p or chunky write) at vsync(), rest(), the
  * input polls, a palette change, and straight after a blit that covers at
  * least half of it, which is how a double-buffered game shows a frame.
@@ -35,10 +36,69 @@ static void close_screen(void)
         a4_free(b->dat);
         a4_free(b);
     }
+    a4_free(A4S->tc_lut);
+    A4S->tc_lut = NULL;
     screen = NULL;
     _a4_screen_w = 0;
     _a4_screen_h = 0;
     gfx_driver = NULL;
+}
+
+/* the colour cube a truecolour screen is shown in: index r*42 + g*6 + b,
+ * r and b 0-5, g 0-6 */
+static int cube_r(int v) { return (v * 5 + 127) / 255; }
+static int cube_g(int v) { return (v * 6 + 127) / 255; }
+static int cube_index(int r, int g, int b) { return cube_r(r) * 42 + cube_g(g) * 6 + cube_r(b); }
+
+void a4_cube_palette(acgame_rgb8 pal[256])
+{
+    int i;
+    for (i = 0; i < 256; i++) {
+        if (i < 252) {
+            pal[i].r = (uint8_t)(i / 42 * 255 / 5);
+            pal[i].g = (uint8_t)(i / 6 % 7 * 255 / 6);
+            pal[i].b = (uint8_t)(i % 6 * 255 / 5);
+        } else pal[i].r = pal[i].g = pal[i].b = 0;
+    }
+}
+
+/* 15/16-bit: every pixel value's index (65536); then, for 24/32-bit, the
+ * three guns' parts (3 x 256) */
+static unsigned char *make_cube_lut(int depth)
+{
+    unsigned char *t = (unsigned char *)a4_malloc(65536 + 768);
+    long c;
+    int v;
+    if (!t) return NULL;
+    if (depth == 15 || depth == 16)
+        for (c = 0; c < 65536; c++) {
+            int r, g, b;
+            a4_unpack(depth, (uint32_t)c, &r, &g, &b);
+            t[c] = (unsigned char)cube_index(r, g, b);
+        }
+    for (v = 0; v < 256; v++) {
+        t[65536 + v] = (unsigned char)(cube_r(v) * 42);
+        t[65536 + 256 + v] = (unsigned char)(cube_g(v) * 6);
+        t[65536 + 512 + v] = (unsigned char)cube_r(v);
+    }
+    return t;
+}
+
+/* one row of a truecolour screen into the 8-bit frame */
+void a4_cube_row(unsigned char *out, const unsigned char *row, int w, int depth, const unsigned char *lut)
+{
+    int x;
+    const unsigned char *lr = lut + 65536, *lg = lr + 256, *lb = lg + 256;
+    switch (depth) {
+    case 15: { const uint16_t *p = (const uint16_t *)row; for (x = 0; x < w; x++) out[x] = lut[p[x] & 0x7FFF]; break; }
+    case 16: { const uint16_t *p = (const uint16_t *)row; for (x = 0; x < w; x++) out[x] = lut[p[x]]; break; }
+    case 24: for (x = 0; x < w; x++, row += 3) out[x] = (unsigned char)(lr[row[0]] + lg[row[1]] + lb[row[2]]); break;
+    default: {
+        const uint32_t *p = (const uint32_t *)row;
+        for (x = 0; x < w; x++) { uint32_t c = p[x]; out[x] = (unsigned char)(lr[(c >> 16) & 255] + lg[(c >> 8) & 255] + lb[c & 255]); }
+        break;
+    }
+    }
 }
 
 int set_gfx_mode(int card, int w, int h, int v_w, int v_h)
@@ -57,7 +117,8 @@ int set_gfx_mode(int card, int w, int h, int v_w, int v_h)
         if (card == GFX_SAFE && open_acgame(GFX_AUTODETECT, 320, 200) == 0) { w = 320; h = 200; aw = 320; }
         else { a4_set_error("Unable to open an 8-bit screen (acgame.library)"); return -1; }
     }
-    b = create_bitmap(aw, h);
+    b = create_bitmap_ex(a4_valid_depth(_color_depth) ? _color_depth : 8, aw, h);
+    if (b && a4_bdepth(b) != 8 && !(A4S->tc_lut = make_cube_lut(a4_bdepth(b)))) { destroy_bitmap(b); b = NULL; }
     if (!b) { acgame_platform_shutdown(); a4_set_error("Not enough memory for the screen"); return -1; }
     /* the game sees its own width; the pad on the right stays black */
     b->w = w;
@@ -85,8 +146,8 @@ int set_gfx_mode(int card, int w, int h, int v_w, int v_h)
     screen = b;
     _a4_screen_w = w;
     _a4_screen_h = h;
-    if (_color_depth != 8) { /* 8-bit only: the game's bitmaps are 8-bit too */ }
     set_palette(default_palette);
+    a4_update_palette_color();
     a4_present();
     return 0;
 }
@@ -101,15 +162,20 @@ int get_gfx_mode_type(int card) { (void)card; return 0x1 | 0x4; }   /* fullscree
 GFX_MODE_LIST *get_gfx_mode_list(int card)
 {
     static const int sizes[][2] = { { 320, 200 }, { 320, 240 }, { 320, 256 }, { 640, 400 }, { 640, 480 }, { 640, 512 }, { 800, 600 } };
+    static const int depths[] = { 8, 15, 16, 24, 32 };
     GFX_MODE_LIST *l;
-    int i, n = (int)(sizeof(sizes) / sizeof(sizes[0]));
+    int i, k, n = (int)(sizeof(sizes) / sizeof(sizes[0])), nd = (int)(sizeof(depths) / sizeof(depths[0]));
     (void)card;
     l = (GFX_MODE_LIST *)a4_calloc(sizeof(GFX_MODE_LIST));
     if (!l) return NULL;
-    l->mode = (GFX_MODE *)a4_calloc(sizeof(GFX_MODE) * (size_t)(n + 1));
+    l->mode = (GFX_MODE *)a4_calloc(sizeof(GFX_MODE) * (size_t)(n * nd + 1));
     if (!l->mode) { a4_free(l); return NULL; }
-    for (i = 0; i < n; i++) { l->mode[i].width = sizes[i][0]; l->mode[i].height = sizes[i][1]; l->mode[i].bpp = 8; }
-    l->num_modes = n;
+    for (k = 0; k < nd; k++)
+        for (i = 0; i < n; i++) {
+            GFX_MODE *m = &l->mode[k * n + i];
+            m->width = sizes[i][0]; m->height = sizes[i][1]; m->bpp = depths[k];
+        }
+    l->num_modes = n * nd;
     return l;
 }
 
@@ -131,17 +197,24 @@ void a4_present(void)
 {
     acgame_indexed_surface *frame;
     BITMAP *b = A4S->screen_bmp;
-    int y, i, w;
+    int y, i, w, d;
     if (!A4S->gfx_on || !b) return;
     frame = acgame_platform_begin_indexed_frame();
     if (!frame) return;
     w = (int)frame->width < (int)((b->w + 7) & ~7) ? (int)frame->width : (int)((b->w + 7) & ~7);
-    for (y = 0; y < b->h && y < (int)frame->height; y++)
-        memcpy(frame->pixels + (size_t)y * frame->pitch, b->line[y], (size_t)w);
-    for (i = 0; i < 256; i++) {
-        frame->palette[i].r = (uint8_t)a4_pal63to255(A4S->palette[i][0]);
-        frame->palette[i].g = (uint8_t)a4_pal63to255(A4S->palette[i][1]);
-        frame->palette[i].b = (uint8_t)a4_pal63to255(A4S->palette[i][2]);
+    d = a4_bdepth(b);
+    if (d == 8) {
+        for (y = 0; y < b->h && y < (int)frame->height; y++)
+            memcpy(frame->pixels + (size_t)y * frame->pitch, b->line[y], (size_t)w);
+        for (i = 0; i < 256; i++) {
+            frame->palette[i].r = (uint8_t)a4_pal63to255(A4S->palette[i][0]);
+            frame->palette[i].g = (uint8_t)a4_pal63to255(A4S->palette[i][1]);
+            frame->palette[i].b = (uint8_t)a4_pal63to255(A4S->palette[i][2]);
+        }
+    } else {
+        for (y = 0; y < b->h && y < (int)frame->height; y++)
+            a4_cube_row(frame->pixels + (size_t)y * frame->pitch, b->line[y], w, d, A4S->tc_lut);
+        a4_cube_palette(frame->palette);
     }
     acgame_platform_present_indexed(frame);
     A4S->screen_dirty = 0;
@@ -153,6 +226,10 @@ void a4_present_if_dirty(void)
 {
     if (!A4S->gfx_on) return;
     if (A4S->screen_dirty) { a4_present(); return; }
+    if (A4S->palette_dirty && A4S->screen_bmp && a4_bdepth(A4S->screen_bmp) != 8) {
+        A4S->palette_dirty = 0;                 /* the cube is shown; palette_color has the change */
+        return;
+    }
     if (A4S->palette_dirty) {
         acgame_rgb8 pal[256];
         int i;

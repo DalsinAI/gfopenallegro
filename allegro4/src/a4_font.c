@@ -312,36 +312,42 @@ FONT *load_dat_font(const char *filename, RGB *pal, void *param)
 /* Allegro's font bitmap layout: the top-left pixel's colour draws a box
  * round each glyph; a glyph's top-left corner is where that colour has
  * three neighbours and the fourth (down-right) is not it */
-static int grab_find(BITMAP *b, int border, int *x, int *y, int *w, int *h)
+static int grab_find(BITMAP *b, uint32_t border, int *x, int *y, int *w, int *h)
 {
+    int d = a4_bdepth(b);
+#define PX(yy, xx) a4_rd(b->line[yy], xx, d)
     for (;;) {
         if (*x >= b->w - 1) { *x = 0; (*y)++; if (*y >= b->h - 1) return 0; }
-        if (b->line[*y][*x] == border && b->line[*y][*x + 1] == border &&
-            b->line[*y + 1][*x] == border && b->line[*y + 1][*x + 1] != border) break;
+        if (PX(*y, *x) == border && PX(*y, *x + 1) == border &&
+            PX(*y + 1, *x) == border && PX(*y + 1, *x + 1) != border) break;
         (*x)++;
     }
     *w = 1;
-    while (*x + *w + 1 < b->w && b->line[*y + 1][*x + *w + 1] != border) (*w)++;
+    while (*x + *w + 1 < b->w && PX(*y + 1, *x + *w + 1) != border) (*w)++;
     *h = 1;
-    while (*y + *h + 1 < b->h && b->line[*y + *h + 1][*x + 1] != border) (*h)++;
+    while (*y + *h + 1 < b->h && PX(*y + *h + 1, *x + 1) != border) (*h)++;
     return 1;
+#undef PX
 }
 
 FONT *grab_font_from_bitmap(BITMAP *bmp)
 {
     FONT *f;
     a4_range *r;
-    int border, x, y, w, h, n = 0, mono = 1, other = -1, maxh = 0, i, j;
+    int x, y, w, h, n = 0, mono = 1, maxh = 0, i, j, d;
+    uint32_t border, bg, other = 0xFFFFFFFFu;
     if (!bmp || bmp->w < 2 || bmp->h < 2) return NULL;
-    border = bmp->line[0][0];
+    d = a4_bdepth(bmp);
+    bg = d == 8 ? 0 : a4_maskc(d);              /* a glyph's clear pixels */
+    border = a4_rd(bmp->line[0], 0, d);
     /* count the glyphs; mono when they hold 0 and at most one other colour */
     for (x = 0, y = 0; grab_find(bmp, border, &x, &y, &w, &h); x += w) {
         n++;
         for (j = 0; j < h && mono; j++)
             for (i = 0; i < w; i++) {
-                int p = bmp->line[y + 1 + j][x + 1 + i];
-                if (p == 0) continue;
-                if (other >= 0 && p != other) { mono = 0; break; }
+                uint32_t p = a4_rd(bmp->line[y + 1 + j], x + 1 + i, d);
+                if (p == bg) continue;
+                if (other != 0xFFFFFFFFu && p != other) { mono = 0; break; }
                 other = p;
             }
     }
@@ -363,12 +369,12 @@ FONT *grab_font_from_bitmap(BITMAP *bmp)
             g->w = (short)w; g->h = (short)h;
             for (j = 0; j < h; j++)
                 for (i = 0; i < w; i++)
-                    if (bmp->line[y + 1 + j][x + 1 + i]) g->dat[j * stride + (i >> 3)] |= (unsigned char)(0x80 >> (i & 7));
+                    if (a4_rd(bmp->line[y + 1 + j], x + 1 + i, d) != bg) g->dat[j * stride + (i >> 3)] |= (unsigned char)(0x80 >> (i & 7));
             r->glyphs[n] = g;
         } else {
-            BITMAP *g = create_bitmap(w, h);
+            BITMAP *g = create_bitmap_ex(d, w, h);
             if (!g) continue;
-            for (j = 0; j < h; j++) memcpy(g->line[j], bmp->line[y + 1 + j] + x + 1, (size_t)w);
+            for (j = 0; j < h; j++) memcpy(g->line[j], bmp->line[y + 1 + j] + (x + 1) * a4_bpp(d), (size_t)(w * a4_bpp(d)));
             r->bitmaps[n] = g;
         }
     }
@@ -384,7 +390,7 @@ FONT *grab_font_from_bitmap(BITMAP *bmp)
 static int draw_char(BITMAP *bmp, const FONT *f, int c, int x, int y, int color, int bg)
 {
     a4_range *r = range_for(f, c);
-    int l, t, rr, b, i, j, w, h;
+    int l, t, rr, b, i, j, w, h, d = a4_bdepth(bmp);
     if (!r) { c = allegro_404_char_value(); r = range_for(f, c); if (!r) return 0; }
     if (bmp->clip) { l = bmp->cl; t = bmp->ct; rr = bmp->cr; b = bmp->cb; }
     else { l = 0; t = 0; rr = bmp->w; b = bmp->h; }
@@ -399,22 +405,28 @@ static int draw_char(BITMAP *bmp, const FONT *f, int c, int x, int y, int color,
             for (i = 0; i < w; i++) {
                 int xx = x + i, on = (g->dat[j * stride + (i >> 3)] >> (7 - (i & 7))) & 1;
                 if (xx < l || xx >= rr) continue;
-                if (on) { if (color >= 0) bmp->line[yy][xx] = (unsigned char)color; }
-                else if (bg >= 0) bmp->line[yy][xx] = (unsigned char)bg;
+                if (on) { if (color >= 0) a4_wr(bmp->line[yy], xx, d, (uint32_t)color); }
+                else if (bg >= 0) a4_wr(bmp->line[yy], xx, d, (uint32_t)bg);
             }
         }
         return w;
     } else {
         BITMAP *s = r->bitmaps[c - r->begin];
+        int sd;
+        uint32_t smask;
         if (!s) return 0;
+        sd = a4_bdepth(s);
+        smask = a4_maskc(sd);
         for (j = 0; j < s->h; j++) {
             int yy = y + j;
             if (yy < t || yy >= b) continue;
             for (i = 0; i < s->w; i++) {
-                int xx = x + i, p = s->line[j][i];
+                int xx = x + i;
+                uint32_t p;
                 if (xx < l || xx >= rr) continue;
-                if (p) bmp->line[yy][xx] = (unsigned char)(color >= 0 ? color : p);
-                else if (bg >= 0) bmp->line[yy][xx] = (unsigned char)bg;
+                p = a4_rd(s->line[j], i, sd);
+                if (p != smask) a4_wr(bmp->line[yy], xx, d, color >= 0 ? (uint32_t)color : a4_convert(p, sd, d));
+                else if (bg >= 0) a4_wr(bmp->line[yy], xx, d, (uint32_t)bg);
             }
         }
         return s->w;
