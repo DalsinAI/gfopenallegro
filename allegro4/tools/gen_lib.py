@@ -30,6 +30,7 @@ STUB_SIDE = {
     "textprintf_ex", "textprintf_centre_ex", "textprintf_right_ex", "textprintf_justify_ex",
     "textprintf", "textprintf_centre", "textprintf_right", "textprintf_justify",
     "hsv_to_rgb", "rgb_to_hsv", "_a4_strdup", "file_size_ex",
+    "get_config_float", "set_config_float",
 }
 # the library's own calls that are not in allegro.h
 EXTRA = [

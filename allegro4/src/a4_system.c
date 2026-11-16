@@ -51,6 +51,7 @@ int a4_install(struct a4_public *pub, int system_id)
 
 void allegro_exit(void)
 {
+    a4_config_shutdown();                   /* writes the config file back */
     if (!A4S->installed) return;
     remove_sound();
     remove_timer();
@@ -84,17 +85,6 @@ int set_display_switch_callback(int dir, void (*cb)(void)) { (void)dir; (void)cb
 void remove_display_switch_callback(void (*cb)(void)) { (void)cb; }
 int get_display_switch_mode(void) { return SWITCH_PAUSE; }
 
-/* configuration: a game's own allegro.cfg is not read; every call gives
- * its default, so games start with Allegro's defaults */
-const char *get_config_string(const char *s, const char *n, const char *def) { (void)s; (void)n; return def; }
-int get_config_int(const char *s, const char *n, int def) { (void)s; (void)n; return def; }
-void set_config_file(const char *f) { (void)f; }
-void set_config_string(const char *s, const char *n, const char *v) { (void)s; (void)n; (void)v; }
-void set_config_int(const char *s, const char *n, int v) { (void)s; (void)n; (void)v; }
-void override_config_file(const char *f) { (void)f; }
-void flush_config_file(void) {}
-void push_config_state(void) {}
-void pop_config_state(void) {}
 
 /* a message box on the screen: lines and buttons; returns the button picked
  * (1-3) by its first letter, Return (1) or Esc (last) */

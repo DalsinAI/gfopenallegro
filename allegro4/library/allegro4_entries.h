@@ -3063,6 +3063,52 @@ static void L_midi_out(REG(a0, unsigned char * data), REG(d0, int length), REG(a
     LEAVE();
 }
 
+static int L_get_config_hex(REG(a0, const char * section), REG(a1, const char * name), REG(d0, int def), REG(a6, struct A4Base *_lb))
+{
+    int _r;
+    ENTER(_lb);
+    _r = get_config_hex(section, name, def);
+    LEAVE();
+    return _r;
+}
+
+static int L_get_config_id(REG(a0, const char * section), REG(a1, const char * name), REG(d0, int def), REG(a6, struct A4Base *_lb))
+{
+    int _r;
+    ENTER(_lb);
+    _r = get_config_id(section, name, def);
+    LEAVE();
+    return _r;
+}
+
+static void L_override_config_data(REG(a0, const char * data), REG(d0, int length), REG(a6, struct A4Base *_lb))
+{
+    ENTER(_lb);
+    override_config_data(data, length);
+    LEAVE();
+}
+
+static void L_set_config_data(REG(a0, const char * data), REG(d0, int length), REG(a6, struct A4Base *_lb))
+{
+    ENTER(_lb);
+    set_config_data(data, length);
+    LEAVE();
+}
+
+static void L_set_config_hex(REG(a0, const char * section), REG(a1, const char * name), REG(d0, int val), REG(a6, struct A4Base *_lb))
+{
+    ENTER(_lb);
+    set_config_hex(section, name, val);
+    LEAVE();
+}
+
+static void L_set_config_id(REG(a0, const char * section), REG(a1, const char * name), REG(d0, int val), REG(a6, struct A4Base *_lb))
+{
+    ENTER(_lb);
+    set_config_id(section, name, val);
+    LEAVE();
+}
+
 static const APTR a4_vectors[] = {
     (APTR)lib_open, (APTR)lib_close, (APTR)lib_expunge, (APTR)lib_null,
     (APTR)L__getpixel,
@@ -3444,5 +3490,11 @@ static const APTR a4_vectors[] = {
     (APTR)L_grab_font_from_bitmap,
     (APTR)L_load_dat_font,
     (APTR)L_midi_out,
+    (APTR)L_get_config_hex,
+    (APTR)L_get_config_id,
+    (APTR)L_override_config_data,
+    (APTR)L_set_config_data,
+    (APTR)L_set_config_hex,
+    (APTR)L_set_config_id,
     (APTR)-1,
 };

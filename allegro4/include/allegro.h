@@ -123,10 +123,18 @@ int get_display_switch_mode(void);
 #define SWITCH_OUT 1
 const char *get_config_string(const char *section, const char *name, const char *def);
 int get_config_int(const char *section, const char *name, int def);
+int get_config_hex(const char *section, const char *name, int def);
+float get_config_float(const char *section, const char *name, float def);
+int get_config_id(const char *section, const char *name, int def);
 void set_config_file(const char *filename);
+void set_config_data(const char *data, int length);
 void set_config_string(const char *section, const char *name, const char *val);
 void set_config_int(const char *section, const char *name, int val);
+void set_config_hex(const char *section, const char *name, int val);
+void set_config_float(const char *section, const char *name, float val);
+void set_config_id(const char *section, const char *name, int val);
 void override_config_file(const char *filename);
+void override_config_data(const char *data, int length);
 void flush_config_file(void);
 void push_config_state(void);
 void pop_config_state(void);

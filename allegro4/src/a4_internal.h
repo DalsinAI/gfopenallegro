@@ -156,6 +156,19 @@ struct a4_datatype {
     void (*destroy)(void *data);
 };
 
+struct a4_cfg_line {
+    char *sec;                      /* the section it is in ("" global) */
+    char *name, *val;               /* an entry; or NULL and: */
+    char *raw;                      /* a comment, blank or [section] line as read */
+};
+struct a4_cfg {
+    char path[256];                 /* written back here; "" for data */
+    struct a4_cfg_line *lines;
+    int n, cap;
+    int dirty;
+};
+#define A4_CFG_STACK 8
+
 struct a4_state {
     struct a4_public *pub;
     int installed;
@@ -212,7 +225,9 @@ struct a4_state {
     FONT *builtin_font;
     /* misc */
     char text[A4_TEXT_MAX];                 /* scratch for formatted text */
-    int config_dummy;
+    struct a4_cfg cfg, cfg_over;
+    struct a4_cfg cfg_stack[A4_CFG_STACK];
+    int cfg_sp;
     void (*close_button)(void);
     int color_conv;
     const RGB *selected_palette;
@@ -270,6 +285,7 @@ FONT *a4_builtin_font(void);
 void a4_font_free_builtin(void);
 void a4_kb_poll(void);
 void a4_set_error(const char *msg);
+void a4_config_shutdown(void);
 
 /* 6-bit palette in, 8-bit out */
 static inline int a4_pal63to255(int c) { return (c << 2) | (c >> 4); }

@@ -855,11 +855,6 @@ static void test_compat(void)
     set_color_conversion(COLORCONV_REDUCE_TO_256);
     CHECK_EQ(get_color_conversion(), COLORCONV_REDUCE_TO_256);
     ASSERT(0);                                      /* nothing without DEBUGMODE */
-    push_config_state();                            /* KQ Lives saves and restores around its own file */
-    set_config_file("kq.cfg");
-    CHECK_EQ(get_config_int("game", "speed", 7), 7);
-    pop_config_state();
-    CHECK_EQ(get_config_int("game", "speed", 3), 3);
 }
 
 /* grab_font_from_bitmap, load_dat_font, midi_out (Timmy Time, Out of Cash) */
@@ -935,6 +930,77 @@ static void test_fonts_more(void)
     midi_out((unsigned char *)"\x90\x40\x7f", 3);   /* silent, and safe */
 }
 
+static char *slurp(const char *path)
+{
+    static char buf[2048];
+    FILE *f = fopen(path, "rb");
+    size_t n = 0;
+    buf[0] = 0;
+    if (f) { n = fread(buf, 1, sizeof(buf) - 1, f); fclose(f); }
+    buf[n] = 0;
+    return buf;
+}
+
+/* config files: Overgod keeps options and keys in overgod.cfg; KQ pushes and pops */
+static void test_config(void)
+{
+    FILE *f = fopen(tmp("overgod.cfg"), "w");
+    char *t;
+    CHECK(f != NULL);
+    if (!f) return;
+    fputs("# Overgod\nversion = 3\n\n[Options]\nsound = 1\r\nvolume=200\n# keys below\n[Keys]\nleft = 0x52\nname = Player One\n", f);
+    fclose(f);
+    set_config_file(tmp("overgod.cfg"));
+    CHECK_EQ(get_config_int(NULL, "version", 0), 3);
+    CHECK_EQ(get_config_int("options", "SOUND", 0), 1);         /* no case */
+    CHECK_EQ(get_config_int("[Options]", "volume", 0), 200);
+    CHECK_EQ(get_config_int("Keys", "left", 0), 0x52);
+    CHECK_EQ(get_config_hex("Keys", "left", 0), 0x52);
+    CHECK(strcmp(get_config_string("Keys", "name", ""), "Player One") == 0);
+    CHECK_EQ(get_config_int("Keys", "missing", -9), -9);
+    CHECK(get_config_float("Options", "volume", 0.0f) == 200.0f);
+    set_config_int("Options", "volume", -40);
+    set_config_int("Keys", "fire", 57);
+    set_config_string("Net", "host", "amiga");
+    set_config_int(NULL, "runs", 2);
+    set_config_float("Options", "gamma", 1.5f);
+    set_config_string("Options", "sound", NULL);                 /* taken out */
+    CHECK_EQ(get_config_int("Options", "volume", 0), -40);
+    CHECK_EQ(get_config_int("Options", "sound", 7), 7);
+    set_config_id("Net", "mode", AL_ID('U','D','P',' '));
+    CHECK_EQ(get_config_id("Net", "mode", 0), AL_ID('U','D','P',' '));
+    flush_config_file();
+    t = slurp(tmp("overgod.cfg"));
+    CHECK(strstr(t, "# Overgod\nversion = 3\nruns = 2\n") != NULL);
+    CHECK(strstr(t, "[Options]\nvolume = -40\ngamma = 1.5\n# keys below\n") != NULL);
+    CHECK(strstr(t, "left = 0x52\nname = Player One\nfire = 57\n") != NULL);
+    CHECK(strstr(t, "\n[Net]\nhost = amiga\nmode = UDP\n") != NULL);
+    CHECK(strstr(t, "sound") == NULL);
+    /* read back as a new run would */
+    set_config_file(NULL);
+    CHECK_EQ(get_config_int("Keys", "fire", 0), 0);
+    set_config_file(tmp("overgod.cfg"));
+    CHECK_EQ(get_config_int("Keys", "fire", 0), 57);
+    CHECK_EQ(get_config_int(NULL, "runs", 0), 2);
+    /* an override wins and is never written */
+    override_config_data("[Keys]\nfire = 99\n", 18);
+    CHECK_EQ(get_config_int("Keys", "fire", 0), 99);
+    override_config_file(NULL);
+    CHECK_EQ(get_config_int("Keys", "fire", 0), 57);
+    /* KQ Lives: push, its own file, pop back */
+    push_config_state();
+    CHECK_EQ(get_config_int("Keys", "fire", 7), 7);
+    set_config_data("[game]\nspeed = 4\n", 18);
+    CHECK_EQ(get_config_int("game", "speed", 0), 4);
+    pop_config_state();
+    CHECK_EQ(get_config_int("Keys", "fire", 0), 57);
+    CHECK_EQ(get_config_int("game", "speed", 3), 3);
+    set_config_int("Keys", "fire", 58);
+    set_config_file(NULL);                                      /* writes it back, as allegro_exit does */
+    t = slurp(tmp("overgod.cfg"));
+    CHECK(strstr(t, "fire = 58\n") != NULL);
+}
+
 int main(void)
 {
     snprintf(tmpdir, sizeof(tmpdir), "%s/a4test-%d", getenv("TMPDIR") ? getenv("TMPDIR") : "/tmp", (int)getpid());
@@ -958,6 +1024,7 @@ int main(void)
     test_gui();
     test_compat();
     test_fonts_more();
+    test_config();
     allegro_exit();
     CHECK(!fake.open);
     {

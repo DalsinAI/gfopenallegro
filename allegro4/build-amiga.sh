@@ -27,7 +27,7 @@ INC="-I$HERE/include -I$HERE/src"
 # file of it may use a4 for anything else.
 LIBCFLAGS="-m68040 $SOFT -Os -fomit-frame-pointer -fno-delete-null-pointer-checks -ffixed-a4 -DA4_LIBRARY $WARN $INC -fno-builtin -fno-tree-loop-distribute-patterns"
 
-CORE="a4_bitmap a4_blit a4_palette a4_fixed a4_gfx a4_input a4_timer a4_file a4_datafile a4_font a4_image a4_sound a4_system"
+CORE="a4_bitmap a4_blit a4_palette a4_fixed a4_gfx a4_input a4_timer a4_file a4_datafile a4_font a4_image a4_sound a4_system a4_config"
 OBJS=""
 for m in $CORE; do
     # shellcheck disable=SC2086

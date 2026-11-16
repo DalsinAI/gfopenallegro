@@ -224,3 +224,17 @@ void textprintf_right(BITMAP *bmp, const FONT *f, int x, int y, int color, const
 { FORMAT(b); textout_right(bmp, f, b, x, y, color); }
 void textprintf_justify(BITMAP *bmp, const FONT *f, int x1, int x2, int y, int diff, int color, const char *format, ...)
 { FORMAT(b); textout_justify(bmp, f, b, x1, x2, y, diff, color); }
+
+/* the float config calls: floats stay game-side (the library is soft float) */
+float get_config_float(const char *section, const char *name, float def)
+{
+    const char *s = get_config_string(section, name, NULL);
+    return (s && *s) ? (float)atof(s) : def;
+}
+
+void set_config_float(const char *section, const char *name, float val)
+{
+    char b[32];
+    snprintf(b, sizeof(b), "%g", (double)val);
+    set_config_string(section, name, b);
+}
