@@ -82,14 +82,24 @@ def decl(typ, name):
 def read_protos():
     src = open(HEADER).read()
     src = re.sub(r"/\*.*?\*/", "", src, flags=re.S)
+    src = re.sub(r"//[^\n]*", "", src)
+    src = re.sub(r"\\\n", " ", src)
     src = re.sub(r"^\s*#.*$", "", src, flags=re.M)
-    src = re.sub(r"static inline[^{]*\{[^}]*\}", "", src)
+    src = re.sub(r'extern\s+"C"\s*\{', "", src)
+    src = re.sub(r"static inline[^{]*\{[^}]*\}", ";", src)
+    while True:                             # struct, union and enum bodies
+        t = re.sub(r"\{[^{}]*\}", "", src)
+        if t == src:
+            break
+        src = t
     protos = {}
-    for m in re.finditer(r"(?:^|;|\})\s*([A-Za-z_][\w \*]*?[\s\*])(\w+)\s*\(([^;{]*)\)\s*;", src, flags=re.S):
-        ret, name, args = m.group(1).strip(), m.group(2), " ".join(m.group(3).split())
-        if ret.startswith(("typedef", "extern", "return")) or "..." in args or "va_list" in args:
+    for chunk in src.split(";"):
+        chunk = " ".join(chunk.split())
+        m = re.match(r"^([A-Za-z_][\w \*]*?[\s\*])(\w+)\s*\((.*)\)$", chunk)
+        if not m:
             continue
-        if ret.startswith("struct ") and "{" in ret:
+        ret, name, args = m.group(1).strip(), m.group(2), m.group(3).strip()
+        if re.match(r"^(typedef|extern|return)\b", ret) or "..." in args or "va_list" in args or "(*" in ret:
             continue
         al = [] if args in ("void", "") else [parse_arg(x) for x in split_args(args)]
         raw = [] if args in ("void", "") else split_args(args)
