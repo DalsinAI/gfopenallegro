@@ -78,6 +78,16 @@ extern "C" {
 #define OTHER_PATH_SEPARATOR '\\'
 #define DEVICE_SEPARATOR ':'
 
+/* Allegro's debugging checks: nothing unless DEBUGMODE */
+#ifdef DEBUGMODE
+#define ASSERT(c) do { if (!(c)) allegro_message("ASSERT %s:%d: %s\n", __FILE__, __LINE__, #c); } while (0)
+#define TRACE allegro_message
+#else
+#define ASSERT(c) ((void)0)
+#define TRACE(...) ((void)0)
+#endif
+
+extern char allegro_id[];
 extern char allegro_error[ALLEGRO_ERROR_SIZE];
 extern int *allegro_errno;
 extern int os_type, os_version, os_revision, os_multitasking;
@@ -207,6 +217,17 @@ int get_color_conversion(void);
 #define COLORCONV_NONE 0
 #define COLORCONV_TOTAL 0xFFFFFFF
 #define COLORCONV_KEEP_TRANS 0x4000000
+#define COLORCONV_8_TO_15 0x1
+#define COLORCONV_8_TO_16 0x2
+#define COLORCONV_8_TO_24 0x4
+#define COLORCONV_8_TO_32 0x8
+#define COLORCONV_15_TO_8 0x10
+#define COLORCONV_16_TO_8 0x100
+#define COLORCONV_24_TO_8 0x1000
+#define COLORCONV_32_TO_8 0x10000
+#define COLORCONV_32A_TO_8 0x200000
+#define COLORCONV_EXPAND_256 (COLORCONV_8_TO_15 | COLORCONV_8_TO_16 | COLORCONV_8_TO_24 | COLORCONV_8_TO_32)
+#define COLORCONV_REDUCE_TO_256 (COLORCONV_15_TO_8 | COLORCONV_16_TO_8 | COLORCONV_24_TO_8 | COLORCONV_32_TO_8 | COLORCONV_32A_TO_8)
 #define COLORCONV_DITHER 0x6000000
 #define MASK_COLOR_8 0
 #define MASK_COLOR_15 0x7C1F
@@ -520,6 +541,10 @@ int uvszprintf(char *buf, int size, const char *format, va_list args);
 #define ustrncat(d, s, n) strncat((d), (s), (n))
 
 /* ---- keyboard ------------------------------------------------------------------------ */
+
+/* keyboard_needs_poll()'s old cousins: the scancode sets a callback sees */
+#define KB_NORMAL        1
+#define KB_EXTENDED      2
 
 #define KB_SHIFT_FLAG    0x0001
 #define KB_CTRL_FLAG     0x0002
@@ -858,6 +883,16 @@ typedef struct MIDI {
 typedef struct DIGI_DRIVER { int id; const char *name; const char *desc; const char *ascii_name; int voices; } DIGI_DRIVER;
 typedef struct MIDI_DRIVER { int id; const char *name; const char *desc; const char *ascii_name; int voices; } MIDI_DRIVER;
 extern DIGI_DRIVER *digi_driver;
+
+/* the other drivers: one each, read for their names */
+typedef struct TIMER_DRIVER { int id; const char *name; const char *desc; const char *ascii_name; } TIMER_DRIVER;
+typedef struct KEYBOARD_DRIVER { int id; const char *name; const char *desc; const char *ascii_name; int autorepeat; } KEYBOARD_DRIVER;
+typedef struct MOUSE_DRIVER { int id; const char *name; const char *desc; const char *ascii_name; } MOUSE_DRIVER;
+typedef struct JOYSTICK_DRIVER { int id; const char *name; const char *desc; const char *ascii_name; } JOYSTICK_DRIVER;
+extern TIMER_DRIVER *timer_driver;
+extern KEYBOARD_DRIVER *keyboard_driver;
+extern MOUSE_DRIVER *mouse_driver;
+extern JOYSTICK_DRIVER *joystick_driver;
 extern MIDI_DRIVER *midi_driver;
 extern volatile long midi_pos;
 extern volatile long midi_time;

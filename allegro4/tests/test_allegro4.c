@@ -828,6 +828,18 @@ static void test_gui(void)
     gui_mouse_x = NULL;
 }
 
+/* names some games read (Liquid War 5) */
+static void test_compat(void)
+{
+    CHECK(strncmp(allegro_id, "Allegro 4", 9) == 0);
+    CHECK(timer_driver && timer_driver->name && keyboard_driver->name && mouse_driver->name && joystick_driver->name);
+    CHECK(KB_NORMAL != KB_EXTENDED);
+    CHECK(COLORCONV_REDUCE_TO_256 & COLORCONV_32_TO_8);
+    set_color_conversion(COLORCONV_REDUCE_TO_256);
+    CHECK_EQ(get_color_conversion(), COLORCONV_REDUCE_TO_256);
+    ASSERT(0);                                      /* nothing without DEBUGMODE */
+}
+
 int main(void)
 {
     snprintf(tmpdir, sizeof(tmpdir), "%s/a4test-%d", getenv("TMPDIR") ? getenv("TMPDIR") : "/tmp", (int)getpid());
@@ -849,6 +861,7 @@ int main(void)
     test_sound();
     test_find();
     test_gui();
+    test_compat();
     allegro_exit();
     CHECK(!fake.open);
     {

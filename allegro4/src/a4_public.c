@@ -14,6 +14,15 @@
 int a4_install(struct a4_public *pub, int system_id);
 
 char allegro_error[ALLEGRO_ERROR_SIZE];
+char allegro_id[] = "Allegro 4.4.3, allegro4.library (AmigaOS, ACGame)";
+static TIMER_DRIVER timer_amiga = { AL_ID('A','T','I','M'), "timer.device", "AmigaOS timer.device", "timer.device" };
+static KEYBOARD_DRIVER keyboard_amiga = { AL_ID('A','K','E','Y'), "ACGame keyboard", "acgame.library keyboard", "ACGame keyboard", TRUE };
+static MOUSE_DRIVER mouse_amiga = { AL_ID('A','M','O','U'), "ACGame mouse", "acgame.library mouse", "ACGame mouse" };
+static JOYSTICK_DRIVER joystick_amiga = { AL_ID('A','J','O','Y'), "ACGame pads", "acgame.library pads", "ACGame pads" };
+TIMER_DRIVER *timer_driver = &timer_amiga;
+KEYBOARD_DRIVER *keyboard_driver = &keyboard_amiga;
+MOUSE_DRIVER *mouse_driver = &mouse_amiga;
+JOYSTICK_DRIVER *joystick_driver = &joystick_amiga;
 static int a4_errno_store;
 int *allegro_errno = &a4_errno_store;
 int os_type = OSTYPE_AMIGA, os_version = 3, os_revision = 2, os_multitasking = TRUE;
