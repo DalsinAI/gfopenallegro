@@ -63,6 +63,7 @@ void allegro_exit(void)
     remove_mouse();
     remove_joystick();
     a4_gfx_shutdown();
+    a4_config_shutdown();
     a4_font_free_builtin();
     font = NULL;
     A4S->installed = 0;

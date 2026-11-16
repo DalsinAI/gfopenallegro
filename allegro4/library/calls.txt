@@ -384,6 +384,7 @@ override_config_data
 set_config_data
 set_config_hex
 set_config_id
+get_config_argv
 _getpixel15
 _getpixel16
 _getpixel24

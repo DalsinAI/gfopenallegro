@@ -31,6 +31,7 @@ char cpu_vendor[32] = "Motorola";
 BITMAP *screen;
 int _a4_screen_w, _a4_screen_h;
 FONT *font;
+FONT *_a4_default_font;
 int allegro_404_char = '^';
 volatile char key[KEY_MAX];
 volatile int key_shifts;
@@ -140,6 +141,7 @@ int install_allegro(int system_id, int *errno_ptr, int (*atexit_ptr)(void (*)(vo
     pub.desktop_palette = desktop_palette;
     pub.palette_color = palette_color;
     if (a4_install(&pub, system_id) != 0) return -1;
+    _a4_default_font = font;
     if (atexit_ptr && !exit_registered) { exit_registered = 1; atexit_ptr(allegro_exit); }
     return 0;
 }
@@ -155,6 +157,24 @@ char *_a4_strdup(const char *s)
 }
 
 uint64_t file_size_ex(const char *filename) { return (uint64_t)file_size(filename); }
+
+/* the config calls with a float: read and written as text here, with the game's C library */
+float get_config_float(const char *section, const char *name, float def)
+{
+    const char *v = get_config_string(section, name, NULL);
+    char *end;
+    double d;
+    if (!v || !*v) return def;
+    d = strtod(v, &end);
+    return end == v ? def : (float)d;
+}
+
+void set_config_float(const char *section, const char *name, float val)
+{
+    char buf[32];
+    snprintf(buf, sizeof(buf), "%g", (double)val);
+    set_config_string(section, name, buf);
+}
 
 void hsv_to_rgb(float h, float s, float v, int *r, int *g, int *b)
 {
@@ -235,17 +255,3 @@ void textprintf_right(BITMAP *bmp, const FONT *f, int x, int y, int color, const
 { FORMAT(b); textout_right(bmp, f, b, x, y, color); }
 void textprintf_justify(BITMAP *bmp, const FONT *f, int x1, int x2, int y, int diff, int color, const char *format, ...)
 { FORMAT(b); textout_justify(bmp, f, b, x1, x2, y, diff, color); }
-
-/* the float config calls: floats stay game-side (the library is soft float) */
-float get_config_float(const char *section, const char *name, float def)
-{
-    const char *s = get_config_string(section, name, NULL);
-    return (s && *s) ? (float)atof(s) : def;
-}
-
-void set_config_float(const char *section, const char *name, float val)
-{
-    char b[32];
-    snprintf(b, sizeof(b), "%g", (double)val);
-    set_config_string(section, name, b);
-}

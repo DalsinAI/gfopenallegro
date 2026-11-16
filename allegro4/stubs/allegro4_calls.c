@@ -5030,20 +5030,21 @@ void set_config_id(const char *section, const char *name, int val)
     __asm volatile ("jsr -2334(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
 }
 
-int _getpixel15(BITMAP *bmp, int x, int y)
+char ** get_config_argv(const char *section, const char *name, int *argc)
 {
     struct Library *const _b = a4_base();
-    if (!_b) return (int)0;
-    register int _d0 __asm("d0") = x;
-    register int _d1 __asm("d1") = y;
-    register BITMAP * _a0 __asm("a0") = bmp;
-    register long _a1 __asm("a1") = 0;
+    if (!_b) return (char **)0;
+    register long _d0 __asm("d0") = 0;
+    register long _d1 __asm("d1") = 0;
+    register const char * _a0 __asm("a0") = section;
+    register const char * _a1 __asm("a1") = name;
+    register int * _a2 __asm("a2") = argc;
     register struct Library *_a6 __asm("a6") = _b;
-    __asm volatile ("jsr -2340(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
-    return (int)_d0;
+    __asm volatile ("jsr -2340(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a2), "r"(_a6) : "cc", "memory");
+    return (char **)_d0;
 }
 
-int _getpixel16(BITMAP *bmp, int x, int y)
+int _getpixel15(BITMAP *bmp, int x, int y)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (int)0;
@@ -5056,7 +5057,7 @@ int _getpixel16(BITMAP *bmp, int x, int y)
     return (int)_d0;
 }
 
-int _getpixel24(BITMAP *bmp, int x, int y)
+int _getpixel16(BITMAP *bmp, int x, int y)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (int)0;
@@ -5069,7 +5070,7 @@ int _getpixel24(BITMAP *bmp, int x, int y)
     return (int)_d0;
 }
 
-int _getpixel32(BITMAP *bmp, int x, int y)
+int _getpixel24(BITMAP *bmp, int x, int y)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (int)0;
@@ -5079,6 +5080,19 @@ int _getpixel32(BITMAP *bmp, int x, int y)
     register long _a1 __asm("a1") = 0;
     register struct Library *_a6 __asm("a6") = _b;
     __asm volatile ("jsr -2358(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
+    return (int)_d0;
+}
+
+int _getpixel32(BITMAP *bmp, int x, int y)
+{
+    struct Library *const _b = a4_base();
+    if (!_b) return (int)0;
+    register int _d0 __asm("d0") = x;
+    register int _d1 __asm("d1") = y;
+    register BITMAP * _a0 __asm("a0") = bmp;
+    register long _a1 __asm("a1") = 0;
+    register struct Library *_a6 __asm("a6") = _b;
+    __asm volatile ("jsr -2364(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
     return (int)_d0;
 }
 
@@ -5092,7 +5106,7 @@ void _putpixel15(BITMAP *bmp, int x, int y, int color)
     register long _a1 __asm("a1") = 0;
     register int _d2 __asm("d2") = color;
     register struct Library *_a6 __asm("a6") = _b;
-    __asm volatile ("jsr -2364(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_d2), "r"(_a6) : "cc", "memory");
+    __asm volatile ("jsr -2370(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_d2), "r"(_a6) : "cc", "memory");
 }
 
 void _putpixel16(BITMAP *bmp, int x, int y, int color)
@@ -5105,7 +5119,7 @@ void _putpixel16(BITMAP *bmp, int x, int y, int color)
     register long _a1 __asm("a1") = 0;
     register int _d2 __asm("d2") = color;
     register struct Library *_a6 __asm("a6") = _b;
-    __asm volatile ("jsr -2370(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_d2), "r"(_a6) : "cc", "memory");
+    __asm volatile ("jsr -2376(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_d2), "r"(_a6) : "cc", "memory");
 }
 
 void _putpixel24(BITMAP *bmp, int x, int y, int color)
@@ -5118,7 +5132,7 @@ void _putpixel24(BITMAP *bmp, int x, int y, int color)
     register long _a1 __asm("a1") = 0;
     register int _d2 __asm("d2") = color;
     register struct Library *_a6 __asm("a6") = _b;
-    __asm volatile ("jsr -2376(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_d2), "r"(_a6) : "cc", "memory");
+    __asm volatile ("jsr -2382(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_d2), "r"(_a6) : "cc", "memory");
 }
 
 void _putpixel32(BITMAP *bmp, int x, int y, int color)
@@ -5131,23 +5145,10 @@ void _putpixel32(BITMAP *bmp, int x, int y, int color)
     register long _a1 __asm("a1") = 0;
     register int _d2 __asm("d2") = color;
     register struct Library *_a6 __asm("a6") = _b;
-    __asm volatile ("jsr -2382(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_d2), "r"(_a6) : "cc", "memory");
+    __asm volatile ("jsr -2388(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_d2), "r"(_a6) : "cc", "memory");
 }
 
 int get_mixer_bits(void)
-{
-    struct Library *const _b = a4_base();
-    if (!_b) return (int)0;
-    register long _d0 __asm("d0") = 0;
-    register long _d1 __asm("d1") = 0;
-    register long _a0 __asm("a0") = 0;
-    register long _a1 __asm("a1") = 0;
-    register struct Library *_a6 __asm("a6") = _b;
-    __asm volatile ("jsr -2388(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
-    return (int)_d0;
-}
-
-int get_mixer_channels(void)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (int)0;
@@ -5160,7 +5161,7 @@ int get_mixer_channels(void)
     return (int)_d0;
 }
 
-int get_mixer_frequency(void)
+int get_mixer_channels(void)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (int)0;
@@ -5173,7 +5174,7 @@ int get_mixer_frequency(void)
     return (int)_d0;
 }
 
-int get_mixer_quality(void)
+int get_mixer_frequency(void)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (int)0;
@@ -5186,7 +5187,7 @@ int get_mixer_quality(void)
     return (int)_d0;
 }
 
-int get_mixer_voices(void)
+int get_mixer_quality(void)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (int)0;
@@ -5199,6 +5200,19 @@ int get_mixer_voices(void)
     return (int)_d0;
 }
 
+int get_mixer_voices(void)
+{
+    struct Library *const _b = a4_base();
+    if (!_b) return (int)0;
+    register long _d0 __asm("d0") = 0;
+    register long _d1 __asm("d1") = 0;
+    register long _a0 __asm("a0") = 0;
+    register long _a1 __asm("a1") = 0;
+    register struct Library *_a6 __asm("a6") = _b;
+    __asm volatile ("jsr -2418(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
+    return (int)_d0;
+}
+
 int geta32(int c)
 {
     struct Library *const _b = a4_base();
@@ -5208,7 +5222,7 @@ int geta32(int c)
     register long _a0 __asm("a0") = 0;
     register long _a1 __asm("a1") = 0;
     register struct Library *_a6 __asm("a6") = _b;
-    __asm volatile ("jsr -2418(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
+    __asm volatile ("jsr -2424(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
     return (int)_d0;
 }
 
@@ -5221,7 +5235,7 @@ int geta_depth(int color_depth, int c)
     register long _a0 __asm("a0") = 0;
     register long _a1 __asm("a1") = 0;
     register struct Library *_a6 __asm("a6") = _b;
-    __asm volatile ("jsr -2424(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
+    __asm volatile ("jsr -2430(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
     return (int)_d0;
 }
 
@@ -5234,7 +5248,7 @@ int getb15(int c)
     register long _a0 __asm("a0") = 0;
     register long _a1 __asm("a1") = 0;
     register struct Library *_a6 __asm("a6") = _b;
-    __asm volatile ("jsr -2430(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
+    __asm volatile ("jsr -2436(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
     return (int)_d0;
 }
 
@@ -5247,7 +5261,7 @@ int getb16(int c)
     register long _a0 __asm("a0") = 0;
     register long _a1 __asm("a1") = 0;
     register struct Library *_a6 __asm("a6") = _b;
-    __asm volatile ("jsr -2436(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
+    __asm volatile ("jsr -2442(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
     return (int)_d0;
 }
 
@@ -5260,7 +5274,7 @@ int getb24(int c)
     register long _a0 __asm("a0") = 0;
     register long _a1 __asm("a1") = 0;
     register struct Library *_a6 __asm("a6") = _b;
-    __asm volatile ("jsr -2442(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
+    __asm volatile ("jsr -2448(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
     return (int)_d0;
 }
 
@@ -5273,7 +5287,7 @@ int getb32(int c)
     register long _a0 __asm("a0") = 0;
     register long _a1 __asm("a1") = 0;
     register struct Library *_a6 __asm("a6") = _b;
-    __asm volatile ("jsr -2448(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
+    __asm volatile ("jsr -2454(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
     return (int)_d0;
 }
 
@@ -5286,7 +5300,7 @@ int getg15(int c)
     register long _a0 __asm("a0") = 0;
     register long _a1 __asm("a1") = 0;
     register struct Library *_a6 __asm("a6") = _b;
-    __asm volatile ("jsr -2454(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
+    __asm volatile ("jsr -2460(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
     return (int)_d0;
 }
 
@@ -5299,7 +5313,7 @@ int getg16(int c)
     register long _a0 __asm("a0") = 0;
     register long _a1 __asm("a1") = 0;
     register struct Library *_a6 __asm("a6") = _b;
-    __asm volatile ("jsr -2460(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
+    __asm volatile ("jsr -2466(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
     return (int)_d0;
 }
 
@@ -5312,7 +5326,7 @@ int getg24(int c)
     register long _a0 __asm("a0") = 0;
     register long _a1 __asm("a1") = 0;
     register struct Library *_a6 __asm("a6") = _b;
-    __asm volatile ("jsr -2466(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
+    __asm volatile ("jsr -2472(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
     return (int)_d0;
 }
 
@@ -5325,7 +5339,7 @@ int getg32(int c)
     register long _a0 __asm("a0") = 0;
     register long _a1 __asm("a1") = 0;
     register struct Library *_a6 __asm("a6") = _b;
-    __asm volatile ("jsr -2472(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
+    __asm volatile ("jsr -2478(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
     return (int)_d0;
 }
 
@@ -5338,7 +5352,7 @@ int getr15(int c)
     register long _a0 __asm("a0") = 0;
     register long _a1 __asm("a1") = 0;
     register struct Library *_a6 __asm("a6") = _b;
-    __asm volatile ("jsr -2478(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
+    __asm volatile ("jsr -2484(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
     return (int)_d0;
 }
 
@@ -5351,7 +5365,7 @@ int getr16(int c)
     register long _a0 __asm("a0") = 0;
     register long _a1 __asm("a1") = 0;
     register struct Library *_a6 __asm("a6") = _b;
-    __asm volatile ("jsr -2484(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
+    __asm volatile ("jsr -2490(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
     return (int)_d0;
 }
 
@@ -5364,7 +5378,7 @@ int getr24(int c)
     register long _a0 __asm("a0") = 0;
     register long _a1 __asm("a1") = 0;
     register struct Library *_a6 __asm("a6") = _b;
-    __asm volatile ("jsr -2490(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
+    __asm volatile ("jsr -2496(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
     return (int)_d0;
 }
 
@@ -5377,7 +5391,7 @@ int getr32(int c)
     register long _a0 __asm("a0") = 0;
     register long _a1 __asm("a1") = 0;
     register struct Library *_a6 __asm("a6") = _b;
-    __asm volatile ("jsr -2496(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
+    __asm volatile ("jsr -2502(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
     return (int)_d0;
 }
 
@@ -5392,7 +5406,7 @@ int makeacol32(int r, int g, int b, int a)
     register int _d2 __asm("d2") = b;
     register int _d3 __asm("d3") = a;
     register struct Library *_a6 __asm("a6") = _b;
-    __asm volatile ("jsr -2502(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_d2), "r"(_d3), "r"(_a6) : "cc", "memory");
+    __asm volatile ("jsr -2508(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_d2), "r"(_d3), "r"(_a6) : "cc", "memory");
     return (int)_d0;
 }
 
@@ -5406,7 +5420,7 @@ int makecol15(int r, int g, int b)
     register long _a1 __asm("a1") = 0;
     register int _d2 __asm("d2") = b;
     register struct Library *_a6 __asm("a6") = _b;
-    __asm volatile ("jsr -2508(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_d2), "r"(_a6) : "cc", "memory");
+    __asm volatile ("jsr -2514(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_d2), "r"(_a6) : "cc", "memory");
     return (int)_d0;
 }
 
@@ -5420,7 +5434,7 @@ int makecol16(int r, int g, int b)
     register long _a1 __asm("a1") = 0;
     register int _d2 __asm("d2") = b;
     register struct Library *_a6 __asm("a6") = _b;
-    __asm volatile ("jsr -2514(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_d2), "r"(_a6) : "cc", "memory");
+    __asm volatile ("jsr -2520(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_d2), "r"(_a6) : "cc", "memory");
     return (int)_d0;
 }
 
@@ -5434,7 +5448,7 @@ int makecol24(int r, int g, int b)
     register long _a1 __asm("a1") = 0;
     register int _d2 __asm("d2") = b;
     register struct Library *_a6 __asm("a6") = _b;
-    __asm volatile ("jsr -2520(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_d2), "r"(_a6) : "cc", "memory");
+    __asm volatile ("jsr -2526(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_d2), "r"(_a6) : "cc", "memory");
     return (int)_d0;
 }
 
@@ -5448,7 +5462,7 @@ int makecol32(int r, int g, int b)
     register long _a1 __asm("a1") = 0;
     register int _d2 __asm("d2") = b;
     register struct Library *_a6 __asm("a6") = _b;
-    __asm volatile ("jsr -2526(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_d2), "r"(_a6) : "cc", "memory");
+    __asm volatile ("jsr -2532(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_d2), "r"(_a6) : "cc", "memory");
     return (int)_d0;
 }
 
@@ -5463,7 +5477,7 @@ void set_add_blender(int r, int g, int b, int a)
     register int _d2 __asm("d2") = b;
     register int _d3 __asm("d3") = a;
     register struct Library *_a6 __asm("a6") = _b;
-    __asm volatile ("jsr -2532(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_d2), "r"(_d3), "r"(_a6) : "cc", "memory");
+    __asm volatile ("jsr -2538(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_d2), "r"(_d3), "r"(_a6) : "cc", "memory");
 }
 
 void set_alpha_blender(void)
@@ -5475,7 +5489,7 @@ void set_alpha_blender(void)
     register long _a0 __asm("a0") = 0;
     register long _a1 __asm("a1") = 0;
     register struct Library *_a6 __asm("a6") = _b;
-    __asm volatile ("jsr -2538(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
+    __asm volatile ("jsr -2544(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
 }
 
 void set_burn_blender(int r, int g, int b, int a)
@@ -5489,7 +5503,7 @@ void set_burn_blender(int r, int g, int b, int a)
     register int _d2 __asm("d2") = b;
     register int _d3 __asm("d3") = a;
     register struct Library *_a6 __asm("a6") = _b;
-    __asm volatile ("jsr -2544(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_d2), "r"(_d3), "r"(_a6) : "cc", "memory");
+    __asm volatile ("jsr -2550(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_d2), "r"(_d3), "r"(_a6) : "cc", "memory");
 }
 
 void set_difference_blender(int r, int g, int b, int a)
@@ -5503,7 +5517,7 @@ void set_difference_blender(int r, int g, int b, int a)
     register int _d2 __asm("d2") = b;
     register int _d3 __asm("d3") = a;
     register struct Library *_a6 __asm("a6") = _b;
-    __asm volatile ("jsr -2550(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_d2), "r"(_d3), "r"(_a6) : "cc", "memory");
+    __asm volatile ("jsr -2556(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_d2), "r"(_d3), "r"(_a6) : "cc", "memory");
 }
 
 void set_dodge_blender(int r, int g, int b, int a)
@@ -5517,7 +5531,7 @@ void set_dodge_blender(int r, int g, int b, int a)
     register int _d2 __asm("d2") = b;
     register int _d3 __asm("d3") = a;
     register struct Library *_a6 __asm("a6") = _b;
-    __asm volatile ("jsr -2556(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_d2), "r"(_d3), "r"(_a6) : "cc", "memory");
+    __asm volatile ("jsr -2562(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_d2), "r"(_d3), "r"(_a6) : "cc", "memory");
 }
 
 void set_invert_blender(int r, int g, int b, int a)
@@ -5531,7 +5545,7 @@ void set_invert_blender(int r, int g, int b, int a)
     register int _d2 __asm("d2") = b;
     register int _d3 __asm("d3") = a;
     register struct Library *_a6 __asm("a6") = _b;
-    __asm volatile ("jsr -2562(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_d2), "r"(_d3), "r"(_a6) : "cc", "memory");
+    __asm volatile ("jsr -2568(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_d2), "r"(_d3), "r"(_a6) : "cc", "memory");
 }
 
 void set_mixer_quality(int quality)
@@ -5543,7 +5557,7 @@ void set_mixer_quality(int quality)
     register long _a0 __asm("a0") = 0;
     register long _a1 __asm("a1") = 0;
     register struct Library *_a6 __asm("a6") = _b;
-    __asm volatile ("jsr -2568(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
+    __asm volatile ("jsr -2574(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
 }
 
 void set_multiply_blender(int r, int g, int b, int a)
@@ -5557,7 +5571,7 @@ void set_multiply_blender(int r, int g, int b, int a)
     register int _d2 __asm("d2") = b;
     register int _d3 __asm("d3") = a;
     register struct Library *_a6 __asm("a6") = _b;
-    __asm volatile ("jsr -2574(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_d2), "r"(_d3), "r"(_a6) : "cc", "memory");
+    __asm volatile ("jsr -2580(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_d2), "r"(_d3), "r"(_a6) : "cc", "memory");
 }
 
 void set_screen_blender(int r, int g, int b, int a)
@@ -5571,7 +5585,7 @@ void set_screen_blender(int r, int g, int b, int a)
     register int _d2 __asm("d2") = b;
     register int _d3 __asm("d3") = a;
     register struct Library *_a6 __asm("a6") = _b;
-    __asm volatile ("jsr -2580(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_d2), "r"(_d3), "r"(_a6) : "cc", "memory");
+    __asm volatile ("jsr -2586(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_d2), "r"(_d3), "r"(_a6) : "cc", "memory");
 }
 
 void set_trans_blender(int r, int g, int b, int a)
@@ -5585,7 +5599,7 @@ void set_trans_blender(int r, int g, int b, int a)
     register int _d2 __asm("d2") = b;
     register int _d3 __asm("d3") = a;
     register struct Library *_a6 __asm("a6") = _b;
-    __asm volatile ("jsr -2586(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_d2), "r"(_d3), "r"(_a6) : "cc", "memory");
+    __asm volatile ("jsr -2592(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_d2), "r"(_d3), "r"(_a6) : "cc", "memory");
 }
 
 void set_write_alpha_blender(void)
@@ -5597,5 +5611,5 @@ void set_write_alpha_blender(void)
     register long _a0 __asm("a0") = 0;
     register long _a1 __asm("a1") = 0;
     register struct Library *_a6 __asm("a6") = _b;
-    __asm volatile ("jsr -2592(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
+    __asm volatile ("jsr -2598(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
 }

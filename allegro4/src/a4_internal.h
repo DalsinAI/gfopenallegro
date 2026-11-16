@@ -230,6 +230,8 @@ struct a4_state {
     struct a4_cfg cfg, cfg_over;
     struct a4_cfg cfg_stack[A4_CFG_STACK];
     int cfg_sp;
+    char *cfg_argv_buf;
+    char **cfg_argv;
     void (*close_button)(void);
     int color_conv;
     const RGB *selected_palette;
@@ -258,6 +260,7 @@ void *a4_malloc(size_t n);
 void *a4_calloc(size_t n);
 void *a4_realloc(void *p, size_t oldn, size_t n);
 void a4_free(void *p);
+void a4_config_shutdown(void);
 char *a4_strdup0(const char *s);
 
 a4_file *a4_os_open(const char *name, int write);

@@ -28,8 +28,13 @@ from datafiles and an 8x8 built-in font; `al_findfirst` and file names;
 the GUI: dialogs (`do_dialog`, `init_dialog`/`update_dialog`/`shutdown_dialog`,
 `popup_dialog`) and the standard objects (`d_box_proc`, `d_button_proc`,
 `d_check_proc`, `d_radio_proc`, `d_edit_proc`, `d_list_proc`, `d_textbox_proc`,
-`d_slider_proc`, `d_keyboard_proc` and the text ones), run in the game's own
-code. No menus yet.
+`d_slider_proc`, `d_keyboard_proc` and the text ones), and menus (`do_menu`,
+`init_menu`/`update_menu`/`shutdown_menu`, the `d_menu_proc` menu bar, the
+`gui_menu_draw_menu*` hooks), run in the game's own code; FLI and FLC
+animations (`open_fli`, `open_memory_fli`, `next_fli_frame`, `play_fli`);
+`gfx_mode_select`, `palette_color`, `get_config_text` and the GUI names
+Allegro's internal header gives (`gui_shadow_box_proc`, `gui_mouse_focus`,
+`_default_font`...).
 
 Limits: 8-bit colour only. MIDI loads but plays silent; samples are mixed,
 but stay silent until acgame.library has audio. Games written for Unix paths
@@ -37,7 +42,7 @@ work: "./data" and "../save" become "data" and "/save".
 
 ## Building
 
-    tests/run_tests.sh     host unit tests (320 checks; SANITIZE="-fsanitize=address,undefined")
+    tests/run_tests.sh     host unit tests (497 checks; SANITIZE="-fsanitize=address,undefined")
     build-amiga.sh         allegro4.library, liballeg.a, tests/A4LibSmoke (STOVE=, OUT=)
     tools/gen_lib.py       the library's calls from include/allegro.h
 

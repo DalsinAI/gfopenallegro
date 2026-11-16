@@ -19,6 +19,8 @@ static char *dupn(const char *s, int n)
     return d;
 }
 
+static void drop_argv(void);
+
 static void cfg_free(struct a4_cfg *c)
 {
     int i;
@@ -277,6 +279,7 @@ void push_config_state(void)
 
 void pop_config_state(void)
 {
+    if (A4S->cfg_sp == 0) return;               /* nothing pushed: as Allegro, no change */
     cfg_write(&A4S->cfg);
     cfg_free(&A4S->cfg);
     if (A4S->cfg_sp > 0) {
@@ -291,6 +294,7 @@ void a4_config_shutdown(void)
     cfg_free(&A4S->cfg);
     cfg_free(&A4S->cfg_over);
     while (A4S->cfg_sp > 0) cfg_free(&A4S->cfg_stack[--A4S->cfg_sp]);
+    drop_argv();
 }
 
 const char *get_config_string(const char *section, const char *name, const char *def)
@@ -358,4 +362,42 @@ void set_config_id(const char *section, const char *name, int val)
     for (i = 3; i >= 0; i--) { int ch = (val >> (i * 8)) & 255; if (ch && ch != ' ') b[n++] = (char)ch; }
     b[n] = 0;
     set_config_string(section, name, b);
+}
+
+static void drop_argv(void)
+{
+    a4_free(A4S->cfg_argv_buf); a4_free(A4S->cfg_argv);
+    A4S->cfg_argv_buf = NULL; A4S->cfg_argv = NULL;
+}
+
+/* the value cut at spaces; "quoted words" stay one; valid until the next call */
+char **get_config_argv(const char *section, const char *name, int *argc)
+{
+    const char *v = get_config_string(section, name, NULL);
+    long n;
+    int count = 0;
+    char *p;
+    if (argc) *argc = 0;
+    drop_argv();
+    if (!v) return NULL;
+    n = (long)strlen(v);
+    A4S->cfg_argv_buf = dupn(v, (int)n);
+    A4S->cfg_argv = (char **)a4_calloc(sizeof(char *) * (size_t)(n / 2 + 2));
+    if (!A4S->cfg_argv_buf || !A4S->cfg_argv) { drop_argv(); return NULL; }
+    p = A4S->cfg_argv_buf;
+    for (;;) {
+        while (*p && (is_space((unsigned char)*p) || *p == '\n')) p++;
+        if (!*p) break;
+        if (*p == '"') {
+            p++;
+            A4S->cfg_argv[count++] = p;
+            while (*p && *p != '"') p++;
+        } else {
+            A4S->cfg_argv[count++] = p;
+            while (*p && !is_space((unsigned char)*p) && *p != '\n') p++;
+        }
+        if (*p) *p++ = 0;
+    }
+    if (argc) *argc = count;
+    return A4S->cfg_argv;
 }

@@ -3109,6 +3109,15 @@ static void L_set_config_id(REG(a0, const char * section), REG(a1, const char * 
     LEAVE();
 }
 
+static char ** L_get_config_argv(REG(a0, const char * section), REG(a1, const char * name), REG(a2, int * argc), REG(a6, struct A4Base *_lb))
+{
+    char ** _r;
+    ENTER(_lb);
+    _r = get_config_argv(section, name, argc);
+    LEAVE();
+    return _r;
+}
+
 static int L__getpixel15(REG(a0, BITMAP * bmp), REG(d0, int x), REG(d1, int y), REG(a6, struct A4Base *_lb))
 {
     int _r;
@@ -3853,6 +3862,7 @@ static const APTR a4_vectors[] = {
     (APTR)L_set_config_data,
     (APTR)L_set_config_hex,
     (APTR)L_set_config_id,
+    (APTR)L_get_config_argv,
     (APTR)L__getpixel15,
     (APTR)L__getpixel16,
     (APTR)L__getpixel24,

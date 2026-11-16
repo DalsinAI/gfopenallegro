@@ -171,6 +171,7 @@ void override_config_data(const char *data, int length);
 void flush_config_file(void);
 void push_config_state(void);
 void pop_config_state(void);
+char **get_config_argv(const char *section, const char *name, int *argc);
 
 /* ---- fixed point ------------------------------------------------------------ */
 
@@ -196,6 +197,22 @@ fixed fixatan2(fixed y, fixed x);
 fixed fixsqrt(fixed x);
 fixed fixhypot(fixed x, fixed y);
 extern const fixed fixtorad_r, radtofix_r;
+/* Allegro 4's older fixed-point names (alcompat.h) */
+#ifndef ALLEGRO_NO_FIX_ALIASES
+#define fadd(x, y)     fixadd((x), (y))
+#define fsub(x, y)     fixsub((x), (y))
+#define fmul(x, y)     fixmul((x), (y))
+#define fdiv(x, y)     fixdiv((x), (y))
+#define fceil(x)       fixceil(x)
+#define ffloor(x)      fixfloor(x)
+#define fsin(x)        fixsin(x)
+#define fcos(x)        fixcos(x)
+#define ftan(x)        fixtan(x)
+#define fatan(x)       fixatan(x)
+#define fatan2(y, x)   fixatan2((y), (x))
+#define fsqrt(x)       fixsqrt(x)
+#define fhypot(x, y)   fixhypot((x), (y))
+#endif
 
 struct BITMAP;
 
@@ -641,6 +658,16 @@ char *ustrzcpy(char *dest, int size, const char *src);
 char *ustrzcat(char *dest, int size, const char *src);
 char *ustrzncpy(char *dest, int size, const char *src, int n);
 int ustricmp(const char *s1, const char *s2);
+/* the C library names Allegro gives where the platform has none (alconfig.h) */
+#ifndef stricmp
+#define stricmp(a, b) ustricmp((a), (b))
+#endif
+#ifndef strlwr
+#define strlwr(s) ustrlwr(s)
+#endif
+#ifndef strupr
+#define strupr(s) ustrupr(s)
+#endif
 int ustrnicmp(const char *s1, const char *s2, int n);
 char *ustrlwr(char *s);
 char *ustrupr(char *s);
