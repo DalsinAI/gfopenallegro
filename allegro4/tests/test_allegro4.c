@@ -691,6 +691,20 @@ static void test_gui(void)
     CHECK(b == screen);
     th = text_height(font);
 
+    /* _draw_scrollable_frame (Liquid War 5's own boxes): frame always, bar only when rows overflow */
+    {
+        DIALOG f = { NULL, 20, 120, 60, 40, 5, 2, 0, 0, 0, 0, NULL, NULL, NULL };
+        clear_to_color(b, 0);
+        _draw_scrollable_frame(&f, 3, 0, 4, 5, 2);
+        CHECK_EQ(getpixel(b, 20, 120), 5);
+        CHECK_EQ(getpixel(b, 79, 159), 5);
+        CHECK_EQ(getpixel(b, 70, 140), 0);           /* no bar: 3 rows fit in 4 */
+        _draw_scrollable_frame(&f, 20, 0, 4, 5, 2);
+        CHECK_EQ(getpixel(b, 67, 140), 5);           /* the bar's edge line */
+        CHECK_EQ(getpixel(b, 75, 155), 2);           /* bar background below the thumb */
+        CHECK_EQ(getpixel(b, 72, 125), 5);           /* the thumb at the top */
+    }
+
     /* & shortcuts */
     CHECK_EQ(gui_strlen("&File"), text_length(font, "File"));
     CHECK_EQ(gui_strlen("a&&b"), text_length(font, "a&b"));

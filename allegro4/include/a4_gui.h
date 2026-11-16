@@ -138,6 +138,11 @@ int d_text_list_proc(int msg, DIALOG *d, int c);
 int d_textbox_proc(int msg, DIALOG *d, int c);
 int d_slider_proc(int msg, DIALOG *d, int c);
 
+/* Allegro's helper for list-like objects of a game's own (guiproc.c): the
+ * frame round d and, when listsize rows do not fit in height, the scroll bar */
+#define A4_HAS_DRAW_SCROLLABLE_FRAME 1
+void _draw_scrollable_frame(DIALOG *d, int listsize, int offset, int height, int fg_color, int bg);
+
 /* the old window calls: Amiga screens have no close button, so they only
  * keep what they are given (set_close_button_callback is the newer one) */
 int set_window_close_button(int enable);

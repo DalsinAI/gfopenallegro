@@ -424,6 +424,13 @@ static void draw_scrollbar(BITMAP *b, const DIALOG *d, int total, int shown, int
     rectfill(b, x + 2, y + pos + 1, x + 8, y + pos + len - 2, fg);
 }
 
+void _draw_scrollable_frame(DIALOG *d, int listsize, int offset, int height, int fg_color, int bg)
+{
+    BITMAP *b = gui_get_screen();
+    rect(b, d->x, d->y, d->x + d->w - 1, d->y + d->h - 1, fg_color);
+    if (listsize > height) draw_scrollbar(b, d, listsize, height, offset, fg_color, bg);
+}
+
 /* ---- the standard objects ------------------------------------------------------------ */
 
 int d_yield_proc(int msg, DIALOG *d, int c)
