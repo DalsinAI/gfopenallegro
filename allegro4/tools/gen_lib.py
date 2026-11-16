@@ -87,7 +87,7 @@ def read_protos():
     src = re.sub(r"\\\n", " ", src)
     src = re.sub(r"^\s*#.*$", "", src, flags=re.M)
     src = re.sub(r'extern\s+"C"\s*\{', "", src)
-    src = re.sub(r"static inline[^{]*\{[^}]*\}", ";", src)
+    src = re.sub(r"static (?:__attribute__\(\(\w+\)\) )?(?:inline|__inline__)[^{]*\{[^}]*\}", ";", src)
     while True:                             # struct, union and enum bodies
         t = re.sub(r"\{[^{}]*\}", "", src)
         if t == src:
