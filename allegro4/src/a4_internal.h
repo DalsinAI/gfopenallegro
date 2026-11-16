@@ -21,6 +21,7 @@
 #endif
 
 #include "allegro.h"
+#include "acgame/platform.h"              /* before the macros below: its fields are named key */
 
 /* ---- the public variables, by address ----------------------------------- */
 

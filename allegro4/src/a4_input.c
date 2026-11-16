@@ -155,12 +155,12 @@ static void mouse_poll_from(const acgame_input_state *st)
     if (flags && mouse_callback) mouse_callback(flags);
 }
 
-static void joy_from(const acgame_input_state *st)
+/* st->key is ACGame's key array; in the library "key" is the game's key[] */
+#pragma push_macro("key")
+#undef key
+static void joy_from(const acgame_input_state *st, JOYSTICK_INFO *j)
 {
-    JOYSTICK_INFO *j;
     int i;
-    if (!A4S->joy_on) return;
-    j = &joy[0];
     /* the d-pad and stick as stick 0 (digital and analogue), the buttons in
      * ACGame's (SDL's) order */
     {
@@ -189,7 +189,7 @@ static void input_poll(void)
     acgame_platform_poll(&st);
     if (A4S->kb_on) a4_kb_poll();
     mouse_poll_from(&st);
-    joy_from(&st);
+    if (A4S->joy_on) joy_from(&st, &joy[0]);
 }
 
 void a4_poll_point(void)
