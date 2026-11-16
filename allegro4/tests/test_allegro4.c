@@ -1009,6 +1009,451 @@ static void test_config(void)
     CHECK(strstr(t, "fire = 58\n") != NULL);
 }
 
+
+
+
+/* a palette as Allegro 4.0's grabber kept it: 4 bytes a colour, 6-bit (KRaptor) */
+static void test_old_palette(void)
+{
+    FILE *f = fopen(tmp("pal4.dat"), "wb");
+    DATAFILE *d;
+    int i;
+    put32(f, F_NOPACK_MAGIC);
+    put32(f, DAT_MAGIC);
+    put32(f, 1);
+    put_name(f, "PAL");
+    put32(f, DAT_PALETTE); put32(f, 1024); put32(f, 1024);
+    for (i = 0; i < 256; i++) { fputc(i & 63, f); fputc(63 - (i & 63), f); fputc(7, f); fputc(0xEE, f); }
+    fclose(f);
+    d = load_datafile(tmp("pal4.dat"));
+    CHECK(d != NULL);
+    if (d) {
+        RGB *p = (RGB *)d[0].dat;
+        CHECK_EQ(p[1].r, 1); CHECK_EQ(p[1].g, 62); CHECK_EQ(p[1].b, 7);
+        CHECK_EQ(p[255].r, 63); CHECK_EQ(p[255].g, 0); CHECK_EQ(p[255].b, 7);
+        unload_datafile(d);
+    }
+}
+
+/* ---- configuration ------------------------------------------------------------------------ */
+
+static void test_config_kraptor(void)
+{
+    static const char script[] =
+        "# Kraptor's level script\r\n"
+        "top = 1\r\n"
+        "[Nivel_1]\r\n"
+        "  enemigos = 12  \r\n"
+        "speed=0x1F\r\n"
+        "scale = 1.5\r\n"
+        "name = \"first level\"\r\n"
+        "ia = up down \"to the left\" 7\r\n"
+        "[sound]\n"
+        "card = SB16\n"
+        "blank =\n"
+        "last = 9";                                 /* no newline at the end */
+    char line[128];
+    FILE *fp;
+    int n;
+    char **av;
+
+    set_config_data(script, (int)strlen(script));
+    CHECK_EQ(get_config_int(NULL, "top", 0), 1);
+    CHECK_EQ(get_config_int("nivel_1", "ENEMIGOS", 0), 12);       /* any case */
+    CHECK_EQ(get_config_int("[Nivel_1]", "enemigos", 0), 12);     /* with brackets */
+    CHECK_EQ(get_config_int("Nivel_1", "speed", 0), 31);           /* 0x */
+    CHECK_EQ(get_config_hex("Nivel_1", "speed", 0), 0x1F);
+    CHECK(get_config_float("Nivel_1", "scale", 0) == 1.5f);
+    CHECK(get_config_float("Nivel_1", "nothing", 2.25f) == 2.25f);
+    CHECK_EQ(get_config_int("Nivel_1", "top", -5), -5);            /* top is in the global section */
+    CHECK_EQ(get_config_int("sound", "last", 0), 9);
+    CHECK(strcmp(get_config_string("sound", "blank", "def"), "") == 0);
+    CHECK(strcmp(get_config_string("sound", "missing", "def"), "def") == 0);
+    CHECK_EQ(get_config_id("sound", "card", 0), (int)AL_ID('S', 'B', '1', '6'));
+    CHECK_EQ(get_config_int("sound", "card", 4), 0);               /* not a number: 0, as 4.4's strtol */
+    av = get_config_argv("Nivel_1", "ia", &n);
+    CHECK_EQ(n, 4);
+    if (av && n == 4) {
+        CHECK(strcmp(av[0], "up") == 0);
+        CHECK(strcmp(av[2], "to the left") == 0);
+        CHECK(strcmp(av[3], "7") == 0);
+        CHECK(av[4] == NULL);
+    }
+    CHECK(get_config_argv("x", "y", &n) == NULL);
+    CHECK_EQ(n, 0);
+
+    /* an override wins, and set_config_* writes into it when it has the name */
+    override_config_data("[sound]\ncard = GUS\n", 18);
+    CHECK_EQ(get_config_id("sound", "card", 0), (int)AL_ID('G', 'U', 'S', ' '));
+    CHECK_EQ(get_config_int("sound", "last", 0), 9);
+    override_config_data(NULL, 0);
+    CHECK_EQ(get_config_id("sound", "card", 0), (int)AL_ID('S', 'B', '1', '6'));
+
+    /* a file: made on set, kept comments, written on flush, read back */
+    fp = fopen(tmp("k.cfg"), "w");
+    if (fp) { fputs("# my settings\n[video]\nw = 320\n", fp); fclose(fp); }
+    set_config_file(tmp("k.cfg"));
+    CHECK_EQ(get_config_int("video", "w", 0), 320);
+    set_config_int("video", "w", 640);
+    set_config_int("video", "h", -480);
+    set_config_hex("video", "mask", 0xBEEF);
+    set_config_float("sound", "volume", 0.75f);
+    set_config_id("sound", "card", AL_ID('A', 'H', 'I', ' '));
+    set_config_string(NULL, "lang", "es");
+    flush_config_file();
+    fp = fopen(tmp("k.cfg"), "r");
+    CHECK(fp != NULL);
+    if (fp) {
+        CHECK(fgets(line, sizeof(line), fp) && strcmp(line, "# my settings\n") == 0);
+        fclose(fp);
+    }
+    set_config_file(NULL);
+    CHECK_EQ(get_config_int("video", "w", 0), 0);
+    set_config_file(tmp("k.cfg"));
+    CHECK_EQ(get_config_int("video", "w", 0), 640);
+    CHECK_EQ(get_config_int("video", "h", 0), -480);
+    CHECK_EQ(get_config_hex("video", "mask", 0), 0xBEEF);
+    CHECK(get_config_float("sound", "volume", 0) == 0.75f);
+    CHECK_EQ(get_config_id("sound", "card", 0), (int)AL_ID('A', 'H', 'I', ' '));
+    CHECK(strcmp(get_config_string("", "lang", ""), "es") == 0);
+    set_config_string("video", "h", "");                           /* an empty value removes it */
+    CHECK_EQ(get_config_int("video", "h", 7), 7);
+
+    /* push and pop keep the file; the inner state starts empty */
+    push_config_state();
+    CHECK_EQ(get_config_int("video", "w", 1), 1);
+    set_config_data("[video]\nw = 2\n", 14);
+    CHECK_EQ(get_config_int("video", "w", 1), 2);
+    pop_config_state();
+    CHECK_EQ(get_config_int("video", "w", 0), 640);
+    pop_config_state();                                             /* nothing pushed: no change */
+    CHECK_EQ(get_config_int("video", "w", 0), 640);
+    set_config_file(NULL);
+}
+
+/* ---- menus (Kraptor's menu bar) ------------------------------------------------------- */
+
+static int mn_calls, mn_last;
+static MENU *mn_active;
+static int mn_new(void) { mn_calls++; mn_last = 1; mn_active = active_menu; return D_O_K; }
+static int mn_quit(void) { mn_calls++; mn_last = 2; return D_CLOSE; }
+static int mn_sub(void) { mn_calls++; mn_last = 3; return D_REDRAW; }
+static int mb_reads;
+static int t_mouse_b_held(void) { return mb_reads > 0 ? (mb_reads--, 1) : 0; }
+static int dm_x, dm_y, dm_w, dm_h, dm_items;
+static void t_draw_menu(int x, int y, int w, int h) { dm_x = x; dm_y = y; dm_w = w; dm_h = h; }
+static void t_draw_item(MENU *m, int x, int y, int w, int h, int bar, int sel) { (void)m; (void)x; (void)y; (void)w; (void)h; (void)bar; (void)sel; dm_items++; }
+
+static void test_menus(void)
+{
+    static MENU sub[] = {
+        { "&Easy", mn_sub, NULL, D_SELECTED, NULL },
+        { "&Hard", mn_sub, NULL, 0, NULL },
+        { NULL, NULL, NULL, 0, NULL },
+    };
+    static MENU game[] = {
+        { "&New\tF2", mn_new, NULL, 0, NULL },
+        { "", NULL, NULL, 0, NULL },
+        { "&Level", NULL, sub, 0, NULL },
+        { "&Off", mn_new, NULL, D_DISABLED, NULL },
+        { "&Quit", mn_quit, NULL, 0, NULL },
+        { NULL, NULL, NULL, 0, NULL },
+    };
+    static MENU top[] = {
+        { "&Game", NULL, game, 0, NULL },
+        { "&Help", mn_new, NULL, 0, NULL },
+        { NULL, NULL, NULL, 0, NULL },
+    };
+    DIALOG dlg[] = {
+        { d_menu_proc, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, top, NULL, NULL },
+        { NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL, NULL },
+    };
+    MENU_PLAYER *mp;
+    DIALOG_PLAYER *dp;
+    int th = text_height(font), ih = th + 4, r;
+
+    CHECK_EQ(set_gfx_mode(GFX_AUTODETECT, 320, 200, 0, 0), 0);
+    install_keyboard();
+    clear_keybuf();
+    gui_fg_color = 15; gui_bg_color = 1; gui_mg_color = 8;
+    gui_mouse_x = t_mouse_x; gui_mouse_y = t_mouse_y; gui_mouse_z = t_mouse_z; gui_mouse_b = t_mouse_b;
+    tm_x = 319; tm_y = 199; tm_reads = 0; tm_z = 0;
+
+    /* a drop-down: drawn, keys move over the separator, Enter picks and calls the proc */
+    clear_to_color(screen, 0);
+    mp = init_menu(game, 10, 20);
+    CHECK(mp != NULL);
+    CHECK_EQ(getpixel(screen, 10, 20), 15);                 /* the frame */
+    CHECK_EQ(getpixel(screen, 12, 22), 1);                  /* an item, not highlighted */
+    simulate_keypress(KEY_DOWN << 8);                       /* New */
+    simulate_keypress(KEY_DOWN << 8);                       /* over the separator to Level */
+    CHECK(update_menu(mp));
+    CHECK_EQ(getpixel(screen, 12, 21 + 2 * ih + 1), 15);    /* Level highlighted */
+    CHECK_EQ(getpixel(screen, 12, 21 + 1), 1);              /* New no longer */
+    simulate_keypress(KEY_UP << 8);
+    simulate_keypress(KEY_ENTER << 8);
+    CHECK(!update_menu(mp));
+    mn_calls = 0; mn_active = NULL;
+    CHECK_EQ(shutdown_menu(mp), 0);
+    CHECK_EQ(mn_calls, 1);
+    CHECK(mn_active == &game[0]);                           /* active_menu during the proc */
+    CHECK_EQ(getpixel(screen, 10, 20), 0);                  /* what it covered is back */
+
+    /* a child: Right opens it, Enter picks in it; the root gives its own open item */
+    mp = init_menu(game, 10, 20);
+    simulate_ukeypress('l', KEY_L);                         /* &Level: the shortcut opens it */
+    simulate_keypress(KEY_DOWN << 8);                       /* Easy -> Hard */
+    simulate_keypress(KEY_ENTER << 8);
+    CHECK(!update_menu(mp));
+    mn_calls = 0;
+    CHECK_EQ(shutdown_menu(mp), 2);
+    CHECK_EQ(mn_calls, 1);
+    CHECK_EQ(mn_last, 3);
+
+    /* Esc in a child goes back; Esc again ends with -1; a disabled item does nothing */
+    mp = init_menu(game, 10, 20);
+    simulate_keypress(KEY_DOWN << 8); simulate_keypress(KEY_DOWN << 8);
+    simulate_keypress(KEY_RIGHT << 8);
+    simulate_keypress(KEY_ESC << 8);
+    simulate_keypress(KEY_DOWN << 8);                       /* Off, disabled */
+    simulate_keypress(KEY_ENTER << 8);
+    CHECK(update_menu(mp));
+    simulate_keypress(KEY_ESC << 8);
+    CHECK(!update_menu(mp));
+    mn_calls = 0;
+    CHECK_EQ(shutdown_menu(mp), -1);
+    CHECK_EQ(mn_calls, 0);
+
+    /* the mouse: a click on an item picks it; a click outside ends the menu */
+    mp = init_menu(game, 10, 20);
+    t_click(20, 21 + 4 * ih + 2);                           /* Quit */
+    CHECK(update_menu(mp));                                 /* pressed */
+    tm_reads = 0;
+    CHECK(!update_menu(mp) || !update_menu(mp));
+    mn_calls = 0;
+    CHECK_EQ(shutdown_menu(mp), 4);
+    CHECK_EQ(mn_last, 2);
+    mp = init_menu(game, 10, 20);
+    t_click(300, 190);
+    CHECK(!update_menu(mp));
+    CHECK_EQ(shutdown_menu(mp), -1);
+
+    /* off the screen's edge: moved back on */
+    mp = init_menu(game, 310, 190);
+    CHECK(update_menu(mp));
+    CHECK_EQ(shutdown_menu(mp), -1);
+    CHECK_EQ(getpixel(screen, 319, 199), 0);
+
+    /* the game's own look */
+    {
+        void (*dm)(int, int, int, int) = gui_menu_draw_menu;
+        CHECK(dm != NULL);
+    }
+    gui_menu_draw_menu = t_draw_menu; gui_menu_draw_menu_item = t_draw_item;
+    dm_items = 0;
+    mp = init_menu(game, 30, 40);
+    CHECK_EQ(dm_x, 30); CHECK_EQ(dm_y, 40);
+    CHECK_EQ(dm_items, 5);
+    CHECK(dm_w > text_length(font, "New") + text_length(font, "F2"));
+    CHECK_EQ(dm_h, 5 * ih + 3);
+    simulate_keypress(KEY_ESC << 8);
+    update_menu(mp);
+    shutdown_menu(mp);
+
+    /* d_menu_proc: the bar sizes itself; Alt+G opens Game; a proc's D_CLOSE closes the dialog */
+    dp = init_dialog(dlg, -1);
+    CHECK(dlg[0].w > text_length(font, "Game") + text_length(font, "Help"));
+    CHECK_EQ(dlg[0].h, ih + 2);
+    tm_x = 0; tm_y = 0;                                     /* the pointer resting on the bar's edge changes nothing */
+    fake.raw[0x64] = 1;                                     /* left Alt */
+    simulate_keypress(KEY_G << 8);
+    simulate_keypress(KEY_UP << 8);                         /* round to Quit */
+    simulate_keypress(KEY_ENTER << 8);
+    mn_last = 0;
+    r = update_dialog(dp);
+    fake.raw[0x64] = 0;
+    poll_keyboard();
+    CHECK(!r);
+    CHECK_EQ(mn_last, 2);
+    CHECK_EQ(shutdown_dialog(dp), 0);
+    /* a click on Help (no child) calls its proc, and the dialog stays */
+    dp = init_dialog(dlg, -1);
+    mb_reads = 2; gui_mouse_b = t_mouse_b_held;
+    tm_x = 1 + text_length(font, "Game") + 16 + 4; tm_y = 3;
+    mn_last = 0;
+    CHECK(update_dialog(dp));
+    CHECK_EQ(mn_last, 1);
+    CHECK(update_dialog(dp));
+    shutdown_dialog(dp);
+    gui_mouse_b = t_mouse_b;
+
+    /* the aintern names and the small calls */
+    CHECK(gui_shadow_box_proc == d_shadow_box_proc);
+    CHECK(gui_button_proc == d_button_proc);
+    CHECK(gui_mouse_focus);
+    CHECK_EQ(palette_color[0], 0);
+    CHECK_EQ(palette_color[200], 200);
+    CHECK(&_default_font == font);
+    reload_config_texts("es");
+    CHECK(strcmp(get_config_text("Sound"), "Sound") == 0);
+    CHECK_EQ(stricmp("Kraptor", "KRAPTOR"), 0);
+    CHECK_EQ(fmul(itofix(3), itofix(4)), itofix(12));
+    CHECK_EQ(fdiv(itofix(3), itofix(4)), ftofix(0.75));
+    set_trans_blender(128, 128, 128, 128);
+    {
+        /* Allegro's text-box helper: counts lines, draws from the offset, clears below */
+        static char tb[] = "one two three four five six seven eight nine ten";
+        int ls = 0, cw = text_length(font, "x"), th2 = text_height(font);
+        _draw_textbox(tb, &ls, 0, 0, TRUE, 8, 0, 0, cw * 14 + 8, th2 * 3 + 4, FALSE, 15, 1, 8);
+        CHECK(ls >= 4);
+        clear_to_color(screen, 0);
+        _draw_textbox(tb, &ls, 1, 1, TRUE, 8, 0, 0, cw * 14 + 8, th2 * 3 + 4, FALSE, 15, 1, 8);
+        CHECK_EQ(getpixel(screen, cw * 14, 2), 1);           /* the background of a drawn row */
+        CHECK_EQ(getpixel(screen, cw * 14 + 20, 2), 0);      /* nothing outside the box */
+        {
+            int lc = 0;
+            _draw_textbox(tb, &lc, 0, 0, FALSE, 8, 0, 0, cw * 14 + 8, th2 * 3 + 4, FALSE, 15, 1, 8);
+            CHECK(lc >= ls - 1);                              /* without words: cut anywhere */
+        }
+    }
+    CHECK(stricmp("a", "b") < 0);
+    gui_mouse_x = NULL;
+}
+
+/* ---- FLI and FLC ------------------------------------------------------------------------ */
+
+static unsigned char fl_buf[4096];
+static int fl_n;
+static void fl8(int v) { fl_buf[fl_n++] = (unsigned char)v; }
+static void fl16(int v) { fl8(v & 255); fl8((v >> 8) & 255); }
+static void fl32(long v) { fl16((int)(v & 0xFFFF)); fl16((int)((v >> 16) & 0xFFFF)); }
+static void fl_put32(int at, long v) { fl_buf[at] = v & 255; fl_buf[at + 1] = (v >> 8) & 255; fl_buf[at + 2] = (v >> 16) & 255; fl_buf[at + 3] = (v >> 24) & 255; }
+static int fl_frame_start(int chunks) { int at = fl_n; fl32(0); fl16(0xF1FA); fl16(chunks); fl32(0); fl32(0); return at; }
+static void fl_end(int at) { fl_put32(at, fl_n - at); }
+
+/* an 8x4 FLC: frame 1 sets colours 1-2 and fills by BYTE_RUN, frame 2 a DELTA_FLC, then the ring frame */
+static int make_flc(void)
+{
+    int fr, ch, y;
+    memset(fl_buf, 0, sizeof(fl_buf));
+    fl_n = 0;
+    fl32(0); fl16(0xAF12); fl16(2); fl16(8); fl16(4); fl16(8); fl16(3); fl32(40);
+    while (fl_n < 128) fl8(0);
+    fl_put32(80, 128);
+    fr = fl_frame_start(2);
+    ch = fl_n; fl32(0); fl16(4); fl16(1); fl8(1); fl8(2); fl8(252); fl8(0); fl8(0); fl8(0); fl8(252); fl8(4); fl_end(ch);
+    ch = fl_n; fl32(0); fl16(15);
+    for (y = 0; y < 4; y++) { fl8(2); fl8(4); fl8(1); fl8(-4 & 255); fl8(2); fl8(2); fl8(1); fl8(2); }
+    if (fl_n & 1) fl8(0);
+    fl_end(ch);
+    fl_end(fr);
+    fl_put32(84, fl_n);
+    fr = fl_frame_start(1);
+    ch = fl_n; fl32(0); fl16(7); fl16(2);
+    fl16(0xFFFF);                                   /* skip a line */
+    fl16(1); fl8(2); fl8(1); fl8(2); fl8(2);        /* line 1: x 2-3 = colour 2 */
+    fl16(0x8000 | 2);                               /* line 2: last pixel 2, */
+    fl16(1); fl8(0); fl8(-2 & 255); fl8(0); fl8(0); /* x 0-3 = 0 */
+    fl_end(ch);
+    fl_end(fr);
+    fr = fl_frame_start(1);                         /* the ring frame: black */
+    ch = fl_n; fl32(6); fl16(13);
+    fl_end(fr);
+    fl_put32(0, fl_n);
+    return fl_n;
+}
+
+/* a 4x2 FLI: COLOR_64, FLI_COPY, then DELTA_FLI and BLACK */
+static int make_fli(void)
+{
+    int fr, ch, i;
+    memset(fl_buf, 0, sizeof(fl_buf));
+    fl_n = 0;
+    fl32(0); fl16(0xAF11); fl16(2); fl16(4); fl16(2); fl16(8); fl16(0); fl16(7);
+    while (fl_n < 128) fl8(0);
+    fr = fl_frame_start(2);
+    ch = fl_n; fl32(0); fl16(11); fl16(1); fl8(5); fl8(1); fl8(63); fl8(31); fl8(1); fl_end(ch);
+    ch = fl_n; fl32(0); fl16(16); for (i = 0; i < 8; i++) fl8(i); fl_end(ch);
+    fl_end(fr);
+    fr = fl_frame_start(2);
+    ch = fl_n; fl32(0); fl16(12); fl16(1); fl16(1); fl8(1); fl8(1); fl8(-2 & 255); fl8(9); fl_end(ch);
+    ch = fl_n; fl32(6); fl16(18);                   /* a postage stamp: skipped */
+    fl_end(fr);
+    fl_put32(0, fl_n);
+    return fl_n;
+}
+
+static void test_fli(void)
+{
+    int n;
+    CHECK_EQ(next_fli_frame(0), FLI_NOT_OPEN);
+    CHECK_EQ(open_memory_fli(fl_buf), FLI_ERROR);  /* zeros: not a FLI */
+
+    make_flc();
+    CHECK_EQ(open_memory_fli(fl_buf), FLI_OK);
+    CHECK(fli_bitmap != NULL);
+    CHECK_EQ(fli_bitmap->w, 8); CHECK_EQ(fli_bitmap->h, 4);
+    CHECK(fli_timer > 0);
+    CHECK_EQ(next_fli_frame(0), FLI_OK);
+    CHECK_EQ(fli_frame, 1);
+    CHECK_EQ(fli_pal_dirty_from, 1); CHECK_EQ(fli_pal_dirty_to, 2);
+    CHECK_EQ(fli_palette[1].r, 63); CHECK_EQ(fli_palette[1].g, 0);
+    CHECK_EQ(fli_palette[2].g, 63); CHECK_EQ(fli_palette[2].b, 1);
+    CHECK_EQ(fli_bmp_dirty_from, 0); CHECK_EQ(fli_bmp_dirty_to, 3);
+    CHECK_EQ(getpixel(fli_bitmap, 0, 0), 1); CHECK_EQ(getpixel(fli_bitmap, 3, 3), 1);
+    CHECK_EQ(getpixel(fli_bitmap, 4, 0), 2); CHECK_EQ(getpixel(fli_bitmap, 6, 2), 1);
+    reset_fli_variables();
+    CHECK(fli_bmp_dirty_from > fli_bmp_dirty_to);
+    CHECK_EQ(next_fli_frame(0), FLI_OK);
+    CHECK_EQ(fli_frame, 2);
+    CHECK_EQ(fli_bmp_dirty_from, 1); CHECK_EQ(fli_bmp_dirty_to, 2);
+    CHECK(fli_pal_dirty_from > fli_pal_dirty_to);
+    CHECK_EQ(getpixel(fli_bitmap, 2, 1), 2); CHECK_EQ(getpixel(fli_bitmap, 3, 1), 2);
+    CHECK_EQ(getpixel(fli_bitmap, 2, 0), 1);       /* line 0 skipped */
+    CHECK_EQ(getpixel(fli_bitmap, 0, 2), 0); CHECK_EQ(getpixel(fli_bitmap, 3, 2), 0);
+    CHECK_EQ(getpixel(fli_bitmap, 7, 2), 2);       /* the last-pixel word */
+    CHECK_EQ(next_fli_frame(0), FLI_EOF);
+    CHECK_EQ(next_fli_frame(1), FLI_OK);           /* the ring frame, then back to frame 2 */
+    CHECK_EQ(fli_frame, 1);
+    CHECK_EQ(getpixel(fli_bitmap, 0, 0), 0);
+    CHECK_EQ(next_fli_frame(1), FLI_OK);
+    CHECK_EQ(fli_frame, 2);
+    CHECK_EQ(getpixel(fli_bitmap, 2, 1), 2);
+    close_fli();
+    CHECK(fli_bitmap == NULL);
+
+    n = make_fli();
+    CHECK_EQ(open_memory_fli(fl_buf), FLI_OK);
+    CHECK_EQ(next_fli_frame(0), FLI_OK);
+    CHECK_EQ(fli_palette[5].r, 63); CHECK_EQ(fli_palette[5].g, 31); CHECK_EQ(fli_palette[5].b, 1);
+    CHECK_EQ(getpixel(fli_bitmap, 3, 1), 7);
+    CHECK_EQ(next_fli_frame(0), FLI_OK);
+    CHECK_EQ(getpixel(fli_bitmap, 1, 1), 9); CHECK_EQ(getpixel(fli_bitmap, 2, 1), 9);
+    CHECK_EQ(getpixel(fli_bitmap, 0, 1), 4); CHECK_EQ(getpixel(fli_bitmap, 3, 1), 7);
+    CHECK_EQ(next_fli_frame(1), FLI_OK);           /* no ring frame: from the start */
+    CHECK_EQ(getpixel(fli_bitmap, 1, 1), 5);
+    close_fli();
+
+    /* a file, and play_fli to the end */
+    {
+        FILE *o = fopen(tmp("t.fli"), "wb");
+        BITMAP *b = create_bitmap(4, 2);
+        CHECK(o != NULL);
+        if (o) { fwrite(fl_buf, 1, n, o); fclose(o); }
+        clear_bitmap(b);
+        CHECK_EQ(play_fli(tmp("t.fli"), b, 0, NULL), FLI_OK);
+        CHECK_EQ(getpixel(b, 2, 1), 9);
+        CHECK(fli_bitmap == NULL);
+        CHECK_EQ(open_fli(tmp("missing.fli")), FLI_ERROR);
+        /* a truncated frame is an error, not a crash */
+        fl_buf[128] = 0xFF; fl_buf[129] = 0x7F;
+        CHECK_EQ(open_memory_fli(fl_buf), FLI_OK);
+        CHECK_EQ(next_fli_frame(0), FLI_ERROR);
+        close_fli();
+        destroy_bitmap(b);
+    }
+}
+
 int main(void)
 {
     snprintf(tmpdir, sizeof(tmpdir), "%s/a4test-%d", getenv("TMPDIR") ? getenv("TMPDIR") : "/tmp", (int)getpid());
@@ -1033,6 +1478,10 @@ int main(void)
     test_compat();
     test_fonts_more();
     test_config();
+    test_old_palette();
+    test_config_kraptor();
+    test_menus();
+    test_fli();
     allegro_exit();
     CHECK(!fake.open);
     {

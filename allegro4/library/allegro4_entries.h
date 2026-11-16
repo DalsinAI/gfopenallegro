@@ -3109,6 +3109,15 @@ static void L_set_config_id(REG(a0, const char * section), REG(a1, const char * 
     LEAVE();
 }
 
+static char ** L_get_config_argv(REG(a0, const char * section), REG(a1, const char * name), REG(a2, int * argc), REG(a6, struct A4Base *_lb))
+{
+    char ** _r;
+    ENTER(_lb);
+    _r = get_config_argv(section, name, argc);
+    LEAVE();
+    return _r;
+}
+
 static const APTR a4_vectors[] = {
     (APTR)lib_open, (APTR)lib_close, (APTR)lib_expunge, (APTR)lib_null,
     (APTR)L__getpixel,
@@ -3496,5 +3505,6 @@ static const APTR a4_vectors[] = {
     (APTR)L_set_config_data,
     (APTR)L_set_config_hex,
     (APTR)L_set_config_id,
+    (APTR)L_get_config_argv,
     (APTR)-1,
 };

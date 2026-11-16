@@ -5029,3 +5029,17 @@ void set_config_id(const char *section, const char *name, int val)
     register struct Library *_a6 __asm("a6") = _b;
     __asm volatile ("jsr -2334(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
 }
+
+char ** get_config_argv(const char *section, const char *name, int *argc)
+{
+    struct Library *const _b = a4_base();
+    if (!_b) return (char **)0;
+    register long _d0 __asm("d0") = 0;
+    register long _d1 __asm("d1") = 0;
+    register const char * _a0 __asm("a0") = section;
+    register const char * _a1 __asm("a1") = name;
+    register int * _a2 __asm("a2") = argc;
+    register struct Library *_a6 __asm("a6") = _b;
+    __asm volatile ("jsr -2340(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a2), "r"(_a6) : "cc", "memory");
+    return (char **)_d0;
+}

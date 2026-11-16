@@ -86,16 +86,26 @@ static RLE_SPRITE *read_rle(PACKFILE *f)
     return s;
 }
 
+/* a palette object: 3 bytes a colour, 8-bit (768 bytes), or Allegro's own
+ * PALETTE as the grabber of Allegro 4.0 wrote it, 4 bytes a colour (r, g, b,
+ * an unused byte), 6-bit (1024 bytes: KRaptor's) */
 static RGB *read_palette(PACKFILE *f, long size)
 {
     RGB *p = (RGB *)a4_calloc(sizeof(PALETTE));
-    int c, n = (int)(size / 3), x = 0;
+    int c, quad = size >= 4 * PAL_SIZE && size % 4 == 0, n = (int)(quad ? size / 4 : size / 3), x = 0;
     if (!p) return NULL;
     if (n > PAL_SIZE) n = PAL_SIZE;
     for (c = 0; c < n; c++) {
-        p[c].r = (unsigned char)(pack_getc(f) >> 2);
-        p[c].g = (unsigned char)(pack_getc(f) >> 2);
-        p[c].b = (unsigned char)(pack_getc(f) >> 2);
+        if (quad) {
+            p[c].r = (unsigned char)(pack_getc(f) & 63);
+            p[c].g = (unsigned char)(pack_getc(f) & 63);
+            p[c].b = (unsigned char)(pack_getc(f) & 63);
+            pack_getc(f);
+        } else {
+            p[c].r = (unsigned char)(pack_getc(f) >> 2);
+            p[c].g = (unsigned char)(pack_getc(f) >> 2);
+            p[c].b = (unsigned char)(pack_getc(f) >> 2);
+        }
     }
     for (; c < PAL_SIZE; c++) { p[c] = p[x]; if (++x >= n) x = 0; }
     return p;

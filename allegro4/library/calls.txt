@@ -384,3 +384,4 @@ override_config_data
 set_config_data
 set_config_hex
 set_config_id
+get_config_argv
