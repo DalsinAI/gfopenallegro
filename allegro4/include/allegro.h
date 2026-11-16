@@ -105,7 +105,7 @@ extern char cpu_vendor[];
 #define OSTYPE_WIN2000   AL_ID('W','2','K',' ')
 #define OSTYPE_WINXP     AL_ID('W','X','P',' ')
 #define OSTYPE_WIN2003   AL_ID('W','2','K','3')
-#define OSTYPE_WINVISTA  AL_ID('W','V','I','S')
+#define OSTYPE_WINVISTA  AL_ID('W','V','S','T')
 #define OSTYPE_WIN2008   AL_ID('W','2','K','8')
 #define OSTYPE_WIN7      AL_ID('W','I','N','7')
 #define OSTYPE_WIN8      AL_ID('W','I','N','8')
