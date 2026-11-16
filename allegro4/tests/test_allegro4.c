@@ -848,6 +848,13 @@ static void test_compat(void)
     CHECK(strncmp(allegro_id, "Allegro 4", 9) == 0);
     CHECK(timer_driver && timer_driver->name && keyboard_driver->name && mouse_driver->name && joystick_driver->name);
     CHECK(KB_NORMAL != KB_EXTENDED);
+    {
+        BITMAP *cb = create_bitmap(2, 2);                 /* clear() is a function now, for C++ */
+        clear_to_color(cb, 9);
+        clear(cb);
+        CHECK_EQ(getpixel(cb, 1, 1), 0);
+        destroy_bitmap(cb);
+    }
     CHECK(os_type == OSTYPE_AMIGA && OSTYPE_LINUX != OSTYPE_AMIGA && OSTYPE_WIN95 != OSTYPE_WIN98);
     CHECK_EQ(palette_color[0], 0);
     CHECK_EQ(palette_color[37], 37);

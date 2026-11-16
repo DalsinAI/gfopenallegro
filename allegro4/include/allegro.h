@@ -410,7 +410,11 @@ void solid_mode(void);
 
 void clear_bitmap(BITMAP *bitmap);
 void clear_to_color(BITMAP *bitmap, int color);
-#define clear(bmp) clear_bitmap(bmp)
+/* a function, not a macro, so C++'s std::string::clear() and the like still
+ * work (Allegro 4.4's alcompat.h); ALLEGRO_NO_CLEAR_BITMAP_ALIAS leaves it out */
+#ifndef ALLEGRO_NO_CLEAR_BITMAP_ALIAS
+static __attribute__((unused)) __inline__ void clear(BITMAP *bmp) { clear_bitmap(bmp); }
+#endif
 void putpixel(BITMAP *bmp, int x, int y, int color);
 void _putpixel(BITMAP *bmp, int x, int y, int color);
 int getpixel(BITMAP *bmp, int x, int y);
