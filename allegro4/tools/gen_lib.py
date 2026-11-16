@@ -92,7 +92,8 @@ def read_protos():
         if ret.startswith("struct ") and "{" in ret:
             continue
         al = [] if args in ("void", "") else [parse_arg(x) for x in split_args(args)]
-        protos[name] = (ret, al)
+        raw = [] if args in ("void", "") else split_args(args)
+        protos[name] = (ret, al, raw)
     return protos
 
 
@@ -109,7 +110,7 @@ def main():
     check = "--check" in sys.argv
     protos = read_protos()
     for ret, name, args in EXTRA:
-        protos[name] = (ret, [(t, n, "*" in t) for t, n in args])
+        protos[name] = (ret, [(t, n, "*" in t) for t, n in args], [decl(t, n) for t, n in args])
     wanted = sorted(n for n in protos if n not in STUB_SIDE)
     order = []
     if os.path.exists(CALLS):
@@ -131,7 +132,7 @@ def main():
              " * Copyright (c) 2026 AmiCradle Team. MIT licence (see allegro4/LICENSE). */",
              '#include "allegro4_stubs.h"', ""]
     for i, name in enumerate(order):
-        ret, args = protos[name]
+        ret, args, raw = protos[name]
         regs = assign(args)
         if len(args) > 12:
             sys.exit("%s: too many arguments for registers" % name)
@@ -148,7 +149,7 @@ def main():
         entries.append("static %s L_%s(%s)\n{\n%s}" % (ret, name, ", ".join(params), body))
         vectors.append("(APTR)L_%s" % name)
         # the game side
-        sargs = ", ".join(decl(t, n) for t, n, p in args) or "void"
+        sargs = ", ".join(raw) or "void"   # as allegro.h has it
         lines = ["%s %s(%s)" % (ret, name, sargs), "{",
                  "    struct Library *const _b = a4_base();",
                  "    if (!_b) return%s;" % ("" if ret == "void" else " (%s)0" % ret)]

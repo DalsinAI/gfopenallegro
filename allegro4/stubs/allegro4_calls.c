@@ -27,7 +27,7 @@ int a4_install(struct a4_public * pub, int system_id)
     return (int)_d0;
 }
 
-void acquire_bitmap(BITMAP * bmp)
+void acquire_bitmap(BITMAP *bmp)
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -39,7 +39,7 @@ void acquire_bitmap(BITMAP * bmp)
     __asm volatile ("jsr -42(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
 }
 
-void adjust_sample(const SAMPLE * spl, int vol, int pan, int freq, int loop)
+void adjust_sample(const SAMPLE *spl, int vol, int pan, int freq, int loop)
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -53,7 +53,7 @@ void adjust_sample(const SAMPLE * spl, int vol, int pan, int freq, int loop)
     __asm volatile ("jsr -48(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_d2), "r"(_d3), "r"(_a6) : "cc", "memory");
 }
 
-void al_findclose(struct al_ffblk * info)
+void al_findclose(struct al_ffblk *info)
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -65,7 +65,7 @@ void al_findclose(struct al_ffblk * info)
     __asm volatile ("jsr -54(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
 }
 
-int al_findfirst(const char * pattern, struct al_ffblk * info, int attrib)
+int al_findfirst(const char *pattern, struct al_ffblk *info, int attrib)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (int)0;
@@ -78,7 +78,7 @@ int al_findfirst(const char * pattern, struct al_ffblk * info, int attrib)
     return (int)_d0;
 }
 
-int alert(const char * s1, const char * s2, const char * s3, const char * b1, const char * b2, int c1, int c2)
+int alert(const char *s1, const char *s2, const char *s3, const char *b1, const char *b2, int c1, int c2)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (int)0;
@@ -94,7 +94,7 @@ int alert(const char * s1, const char * s2, const char * s3, const char * b1, co
     return (int)_d0;
 }
 
-char * append_filename(char * dest, const char * path, const char * filename, int size)
+char * append_filename(char *dest, const char *path, const char *filename, int size)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (char *)0;
@@ -108,7 +108,7 @@ char * append_filename(char * dest, const char * path, const char * filename, in
     return (char *)_d0;
 }
 
-void arc(BITMAP * bmp, int x, int y, fixed ang1, fixed ang2, int r, int color)
+void arc(BITMAP *bmp, int x, int y, fixed ang1, fixed ang2, int r, int color)
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -124,7 +124,7 @@ void arc(BITMAP * bmp, int x, int y, fixed ang1, fixed ang2, int r, int color)
     __asm volatile ("jsr -78(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_d2), "r"(_d3), "r"(_d4), "r"(_d5), "r"(_a6) : "cc", "memory");
 }
 
-int bestfit_color(const RGB * pal, int r, int g, int b)
+int bestfit_color(const PALETTE pal, int r, int g, int b)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (int)0;
@@ -138,7 +138,7 @@ int bestfit_color(const RGB * pal, int r, int g, int b)
     return (int)_d0;
 }
 
-int bitmap_color_depth(BITMAP * bmp)
+int bitmap_color_depth(BITMAP *bmp)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (int)0;
@@ -151,7 +151,7 @@ int bitmap_color_depth(BITMAP * bmp)
     return (int)_d0;
 }
 
-unsigned long bmp_read_line(BITMAP * bmp, int line)
+unsigned long bmp_read_line(BITMAP *bmp, int line)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (unsigned long)0;
@@ -177,7 +177,7 @@ const char * calibrate_joystick_name(int n)
     return (const char *)_d0;
 }
 
-char * canonicalize_filename(char * dest, const char * filename, int size)
+char * canonicalize_filename(char *dest, const char *filename, int size)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (char *)0;
@@ -190,7 +190,7 @@ char * canonicalize_filename(char * dest, const char * filename, int size)
     return (char *)_d0;
 }
 
-void circle(BITMAP * bmp, int x, int y, int radius, int color)
+void circle(BITMAP *bmp, int x, int y, int radius, int color)
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -204,7 +204,7 @@ void circle(BITMAP * bmp, int x, int y, int radius, int color)
     __asm volatile ("jsr -114(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_d2), "r"(_d3), "r"(_a6) : "cc", "memory");
 }
 
-void clear_bitmap(BITMAP * bitmap)
+void clear_bitmap(BITMAP *bitmap)
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -241,7 +241,7 @@ BITMAP * create_bitmap(int width, int height)
     return (BITMAP *)_d0;
 }
 
-void create_color_table(COLOR_MAP * table, const RGB * pal, void(*blend)(const PALETTE pal, int x, int y, RGB *rgb), void(*callback)(int pos))
+void create_color_table(COLOR_MAP *table, const PALETTE pal, void (*blend)(const PALETTE pal, int x, int y, RGB *rgb), void (*callback)(int pos))
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -255,7 +255,7 @@ void create_color_table(COLOR_MAP * table, const RGB * pal, void(*blend)(const P
     __asm volatile ("jsr -138(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a2), "r"(_a3), "r"(_a6) : "cc", "memory");
 }
 
-void create_light_table(COLOR_MAP * table, const RGB * pal, int r, int g, int b, void(*callback)(int pos))
+void create_light_table(COLOR_MAP *table, const PALETTE pal, int r, int g, int b, void (*callback)(int pos))
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -269,7 +269,7 @@ void create_light_table(COLOR_MAP * table, const RGB * pal, int r, int g, int b,
     __asm volatile ("jsr -144(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_d2), "r"(_a2), "r"(_a6) : "cc", "memory");
 }
 
-BITMAP * create_sub_bitmap(BITMAP * parent, int x, int y, int width, int height)
+BITMAP * create_sub_bitmap(BITMAP *parent, int x, int y, int width, int height)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (BITMAP *)0;
@@ -309,7 +309,7 @@ void deallocate_voice(int voice)
     __asm volatile ("jsr -162(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
 }
 
-void destroy_font(FONT * f)
+void destroy_font(FONT *f)
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -321,7 +321,7 @@ void destroy_font(FONT * f)
     __asm volatile ("jsr -168(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
 }
 
-void destroy_gfx_mode_list(GFX_MODE_LIST * gfx_mode_list)
+void destroy_gfx_mode_list(GFX_MODE_LIST *gfx_mode_list)
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -333,7 +333,7 @@ void destroy_gfx_mode_list(GFX_MODE_LIST * gfx_mode_list)
     __asm volatile ("jsr -174(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
 }
 
-void destroy_sample(SAMPLE * spl)
+void destroy_sample(SAMPLE *spl)
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -370,7 +370,7 @@ void disable_hardware_cursor(void)
     __asm volatile ("jsr -192(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
 }
 
-void do_ellipse(BITMAP * bmp, int x, int y, int rx, int ry, int d, void(*proc)(BITMAP *, int, int, int))
+void do_ellipse(BITMAP *bmp, int x, int y, int rx, int ry, int d, void (*proc)(BITMAP *, int, int, int))
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -385,7 +385,7 @@ void do_ellipse(BITMAP * bmp, int x, int y, int rx, int ry, int d, void(*proc)(B
     __asm volatile ("jsr -198(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_d2), "r"(_d3), "r"(_d4), "r"(_a6) : "cc", "memory");
 }
 
-void do_line(BITMAP * bmp, int x1, int y1, int x2, int y2, int d, void(*proc)(BITMAP *, int, int, int))
+void do_line(BITMAP *bmp, int x1, int y1, int x2, int y2, int d, void (*proc)(BITMAP *, int, int, int))
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -400,7 +400,7 @@ void do_line(BITMAP * bmp, int x1, int y1, int x2, int y2, int d, void(*proc)(BI
     __asm volatile ("jsr -204(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_d2), "r"(_d3), "r"(_d4), "r"(_a6) : "cc", "memory");
 }
 
-void draw_lit_rle_sprite(BITMAP * bmp, const RLE_SPRITE * sprite, int x, int y, int color)
+void draw_lit_rle_sprite(BITMAP *bmp, const RLE_SPRITE *sprite, int x, int y, int color)
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -413,7 +413,7 @@ void draw_lit_rle_sprite(BITMAP * bmp, const RLE_SPRITE * sprite, int x, int y, 
     __asm volatile ("jsr -210(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_d2), "r"(_a6) : "cc", "memory");
 }
 
-void draw_lit_sprite(BITMAP * bmp, BITMAP * sprite, int x, int y, int color)
+void draw_lit_sprite(BITMAP *bmp, BITMAP *sprite, int x, int y, int color)
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -426,7 +426,7 @@ void draw_lit_sprite(BITMAP * bmp, BITMAP * sprite, int x, int y, int color)
     __asm volatile ("jsr -216(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_d2), "r"(_a6) : "cc", "memory");
 }
 
-void draw_rle_sprite(BITMAP * bmp, const RLE_SPRITE * sprite, int x, int y)
+void draw_rle_sprite(BITMAP *bmp, const RLE_SPRITE *sprite, int x, int y)
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -438,7 +438,7 @@ void draw_rle_sprite(BITMAP * bmp, const RLE_SPRITE * sprite, int x, int y)
     __asm volatile ("jsr -222(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
 }
 
-void draw_sprite(BITMAP * bmp, BITMAP * sprite, int x, int y)
+void draw_sprite(BITMAP *bmp, BITMAP *sprite, int x, int y)
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -450,7 +450,7 @@ void draw_sprite(BITMAP * bmp, BITMAP * sprite, int x, int y)
     __asm volatile ("jsr -228(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
 }
 
-void draw_sprite_v_flip(BITMAP * bmp, BITMAP * sprite, int x, int y)
+void draw_sprite_v_flip(BITMAP *bmp, BITMAP *sprite, int x, int y)
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -462,7 +462,7 @@ void draw_sprite_v_flip(BITMAP * bmp, BITMAP * sprite, int x, int y)
     __asm volatile ("jsr -234(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
 }
 
-void draw_sprite_vh_flip(BITMAP * bmp, BITMAP * sprite, int x, int y)
+void draw_sprite_vh_flip(BITMAP *bmp, BITMAP *sprite, int x, int y)
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -474,7 +474,7 @@ void draw_sprite_vh_flip(BITMAP * bmp, BITMAP * sprite, int x, int y)
     __asm volatile ("jsr -240(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
 }
 
-void ellipsefill(BITMAP * bmp, int x, int y, int rx, int ry, int color)
+void ellipsefill(BITMAP *bmp, int x, int y, int rx, int ry, int color)
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -502,7 +502,7 @@ int enable_triple_buffer(void)
     return (int)_d0;
 }
 
-void fade_from(const RGB * source, const RGB * dest, int speed)
+void fade_from(const PALETTE source, const PALETTE dest, int speed)
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -514,7 +514,7 @@ void fade_from(const RGB * source, const RGB * dest, int speed)
     __asm volatile ("jsr -258(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
 }
 
-void fade_in_range(const RGB * p, int speed, int from, int to)
+void fade_in_range(const PALETTE p, int speed, int from, int to)
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -527,7 +527,7 @@ void fade_in_range(const RGB * p, int speed, int from, int to)
     __asm volatile ("jsr -264(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_d2), "r"(_a6) : "cc", "memory");
 }
 
-void fade_interpolate(const RGB * source, const RGB * dest, RGB * output, int pos, int from, int to)
+void fade_interpolate(const PALETTE source, const PALETTE dest, PALETTE output, int pos, int from, int to)
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -553,7 +553,7 @@ void fade_out(int speed)
     __asm volatile ("jsr -276(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
 }
 
-void fastline(BITMAP * bmp, int x1, int y1, int x2, int y2, int color)
+void fastline(BITMAP *bmp, int x1, int y1, int x2, int y2, int color)
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -568,7 +568,7 @@ void fastline(BITMAP * bmp, int x1, int y1, int x2, int y2, int color)
     __asm volatile ("jsr -282(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_d2), "r"(_d3), "r"(_d4), "r"(_a6) : "cc", "memory");
 }
 
-int file_exists(const char * filename, int attrib, int * aret)
+int file_exists(const char *filename, int attrib, int *aret)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (int)0;
@@ -581,7 +581,7 @@ int file_exists(const char * filename, int attrib, int * aret)
     return (int)_d0;
 }
 
-long file_size(const char * filename)
+long file_size(const char *filename)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (long)0;
@@ -594,7 +594,7 @@ long file_size(const char * filename)
     return (long)_d0;
 }
 
-time_t file_time(const char * filename)
+time_t file_time(const char *filename)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (time_t)0;
@@ -607,7 +607,7 @@ time_t file_time(const char * filename)
     return (time_t)_d0;
 }
 
-int find_allegro_resource(char * dest, const char * resource, const char * ext, const char * datafile, const char * objectname, const char * envvar, const char * subdir, int size)
+int find_allegro_resource(char *dest, const char *resource, const char *ext, const char *datafile, const char *objectname, const char *envvar, const char *subdir, int size)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (int)0;
@@ -624,7 +624,7 @@ int find_allegro_resource(char * dest, const char * resource, const char * ext, 
     return (int)_d0;
 }
 
-char * fix_filename_slashes(char * path)
+char * fix_filename_slashes(char *path)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (char *)0;
@@ -689,7 +689,7 @@ fixed fixtan(fixed x)
     return (fixed)_d0;
 }
 
-void fixup_datafile(DATAFILE * data)
+void fixup_datafile(DATAFILE *data)
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -701,7 +701,7 @@ void fixup_datafile(DATAFILE * data)
     __asm volatile ("jsr -342(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
 }
 
-int generate_optimized_palette(struct BITMAP * image, RGB * pal, const signed char * rsvdcols)
+int generate_optimized_palette(struct BITMAP *image, PALETTE pal, const signed char rsvdcols[256])
 {
     struct Library *const _b = a4_base();
     if (!_b) return (int)0;
@@ -715,7 +715,7 @@ int generate_optimized_palette(struct BITMAP * image, RGB * pal, const signed ch
     return (int)_d0;
 }
 
-void get_clip_rect(BITMAP * bitmap, int * x1, int * y1, int * x2, int * y2)
+void get_clip_rect(BITMAP *bitmap, int *x1, int *y1, int *x2, int *y2)
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -729,7 +729,7 @@ void get_clip_rect(BITMAP * bitmap, int * x1, int * y1, int * x2, int * y2)
     __asm volatile ("jsr -354(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a2), "r"(_a3), "r"(_a6) : "cc", "memory");
 }
 
-int get_clip_state(BITMAP * bitmap)
+int get_clip_state(BITMAP *bitmap)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (int)0;
@@ -742,7 +742,7 @@ int get_clip_state(BITMAP * bitmap)
     return (int)_d0;
 }
 
-int get_config_int(const char * section, const char * name, int def)
+int get_config_int(const char *section, const char *name, int def)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (int)0;
@@ -755,7 +755,7 @@ int get_config_int(const char * section, const char * name, int def)
     return (int)_d0;
 }
 
-const char * get_datafile_property(const DATAFILE * dat, int type)
+const char * get_datafile_property(const DATAFILE *dat, int type)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (const char *)0;
@@ -768,7 +768,7 @@ const char * get_datafile_property(const DATAFILE * dat, int type)
     return (const char *)_d0;
 }
 
-int get_desktop_resolution(int * width, int * height)
+int get_desktop_resolution(int *width, int *height)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (int)0;
@@ -794,7 +794,7 @@ int get_display_switch_mode(void)
     return (int)_d0;
 }
 
-char * get_filename(const char * path)
+char * get_filename(const char *path)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (char *)0;
@@ -807,7 +807,7 @@ char * get_filename(const char * path)
     return (char *)_d0;
 }
 
-int get_font_range_end(FONT * f, int range)
+int get_font_range_end(FONT *f, int range)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (int)0;
@@ -820,7 +820,7 @@ int get_font_range_end(FONT * f, int range)
     return (int)_d0;
 }
 
-int get_font_ranges(FONT * f)
+int get_font_ranges(FONT *f)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (int)0;
@@ -846,7 +846,7 @@ int get_gfx_mode_type(int graphics_card)
     return (int)_d0;
 }
 
-int get_midi_length(MIDI * midi)
+int get_midi_length(MIDI *midi)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (int)0;
@@ -859,7 +859,7 @@ int get_midi_length(MIDI * midi)
     return (int)_d0;
 }
 
-void get_mouse_mickeys(int * mickeyx, int * mickeyy)
+void get_mouse_mickeys(int *mickeyx, int *mickeyy)
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -871,7 +871,7 @@ void get_mouse_mickeys(int * mickeyx, int * mickeyy)
     __asm volatile ("jsr -420(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
 }
 
-void get_palette(RGB * p)
+void get_palette(PALETTE p)
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -896,7 +896,7 @@ int get_refresh_rate(void)
     return (int)_d0;
 }
 
-RLE_SPRITE * get_rle_sprite(BITMAP * bitmap)
+RLE_SPRITE * get_rle_sprite(BITMAP *bitmap)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (RLE_SPRITE *)0;
@@ -948,7 +948,7 @@ int getg_depth(int color_depth, int c)
     return (int)_d0;
 }
 
-int getpixel(BITMAP * bmp, int x, int y)
+int getpixel(BITMAP *bmp, int x, int y)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (int)0;
@@ -987,7 +987,7 @@ int getr8(int c)
     return (int)_d0;
 }
 
-int install_int(void(*proc)(void), long speed)
+int install_int(void (*proc)(void), long speed)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (int)0;
@@ -1013,7 +1013,7 @@ int install_joystick(int type)
     return (int)_d0;
 }
 
-int install_param_int_ex(void(*proc)(void *param), void * param, long speed)
+int install_param_int_ex(void (*proc)(void *param), void *param, long speed)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (int)0;
@@ -1026,7 +1026,7 @@ int install_param_int_ex(void(*proc)(void *param), void * param, long speed)
     return (int)_d0;
 }
 
-int install_sound(int digi, int midi, const char * cfg_path)
+int install_sound(int digi, int midi, const char *cfg_path)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (int)0;
@@ -1039,7 +1039,7 @@ int install_sound(int digi, int midi, const char * cfg_path)
     return (int)_d0;
 }
 
-int is_color_font(FONT * f)
+int is_color_font(FONT *f)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (int)0;
@@ -1052,7 +1052,7 @@ int is_color_font(FONT * f)
     return (int)_d0;
 }
 
-int is_planar_bitmap(BITMAP * bmp)
+int is_planar_bitmap(BITMAP *bmp)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (int)0;
@@ -1065,7 +1065,7 @@ int is_planar_bitmap(BITMAP * bmp)
     return (int)_d0;
 }
 
-int is_same_bitmap(BITMAP * bmp1, BITMAP * bmp2)
+int is_same_bitmap(BITMAP *bmp1, BITMAP *bmp2)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (int)0;
@@ -1078,7 +1078,7 @@ int is_same_bitmap(BITMAP * bmp1, BITMAP * bmp2)
     return (int)_d0;
 }
 
-int is_screen_bitmap(BITMAP * bmp)
+int is_screen_bitmap(BITMAP *bmp)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (int)0;
@@ -1091,7 +1091,7 @@ int is_screen_bitmap(BITMAP * bmp)
     return (int)_d0;
 }
 
-int is_system_bitmap(BITMAP * bmp)
+int is_system_bitmap(BITMAP *bmp)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (int)0;
@@ -1117,7 +1117,7 @@ int keyboard_needs_poll(void)
     return (int)_d0;
 }
 
-BITMAP * load_bitmap(const char * filename, RGB * pal)
+BITMAP * load_bitmap(const char *filename, RGB *pal)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (BITMAP *)0;
@@ -1130,7 +1130,7 @@ BITMAP * load_bitmap(const char * filename, RGB * pal)
     return (BITMAP *)_d0;
 }
 
-BITMAP * load_bmp_pf(PACKFILE * f, RGB * pal)
+BITMAP * load_bmp_pf(PACKFILE *f, RGB *pal)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (BITMAP *)0;
@@ -1143,7 +1143,7 @@ BITMAP * load_bmp_pf(PACKFILE * f, RGB * pal)
     return (BITMAP *)_d0;
 }
 
-DATAFILE * load_datafile(const char * filename)
+DATAFILE * load_datafile(const char *filename)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (DATAFILE *)0;
@@ -1156,7 +1156,7 @@ DATAFILE * load_datafile(const char * filename)
     return (DATAFILE *)_d0;
 }
 
-DATAFILE * load_datafile_object_indexed(const DATAFILE_INDEX * index, int item)
+DATAFILE * load_datafile_object_indexed(const DATAFILE_INDEX *index, int item)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (DATAFILE *)0;
@@ -1169,7 +1169,7 @@ DATAFILE * load_datafile_object_indexed(const DATAFILE_INDEX * index, int item)
     return (DATAFILE *)_d0;
 }
 
-FONT * load_font(const char * filename, RGB * pal, void * param)
+FONT * load_font(const char *filename, RGB *pal, void *param)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (FONT *)0;
@@ -1183,7 +1183,7 @@ FONT * load_font(const char * filename, RGB * pal, void * param)
     return (FONT *)_d0;
 }
 
-int load_joystick_data(const char * filename)
+int load_joystick_data(const char *filename)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (int)0;
@@ -1196,7 +1196,7 @@ int load_joystick_data(const char * filename)
     return (int)_d0;
 }
 
-MIDI * load_midi(const char * filename)
+MIDI * load_midi(const char *filename)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (MIDI *)0;
@@ -1209,7 +1209,7 @@ MIDI * load_midi(const char * filename)
     return (MIDI *)_d0;
 }
 
-BITMAP * load_pcx_pf(PACKFILE * f, RGB * pal)
+BITMAP * load_pcx_pf(PACKFILE *f, RGB *pal)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (BITMAP *)0;
@@ -1222,7 +1222,7 @@ BITMAP * load_pcx_pf(PACKFILE * f, RGB * pal)
     return (BITMAP *)_d0;
 }
 
-SAMPLE * load_voc(const char * filename)
+SAMPLE * load_voc(const char *filename)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (SAMPLE *)0;
@@ -1235,7 +1235,7 @@ SAMPLE * load_voc(const char * filename)
     return (SAMPLE *)_d0;
 }
 
-SAMPLE * load_wav(const char * filename)
+SAMPLE * load_wav(const char *filename)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (SAMPLE *)0;
@@ -1248,7 +1248,7 @@ SAMPLE * load_wav(const char * filename)
     return (SAMPLE *)_d0;
 }
 
-void lock_bitmap(BITMAP * bmp)
+void lock_bitmap(BITMAP *bmp)
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -1260,7 +1260,7 @@ void lock_bitmap(BITMAP * bmp)
     __asm volatile ("jsr -600(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
 }
 
-char * make_relative_filename(char * dest, const char * path, const char * filename, int size)
+char * make_relative_filename(char *dest, const char *path, const char *filename, int size)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (char *)0;
@@ -1303,7 +1303,7 @@ int makecol8(int r, int g, int b)
     return (int)_d0;
 }
 
-void masked_blit(BITMAP * source, BITMAP * dest, int source_x, int source_y, int dest_x, int dest_y, int width, int height)
+void masked_blit(BITMAP *source, BITMAP *dest, int source_x, int source_y, int dest_x, int dest_y, int width, int height)
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -1319,7 +1319,7 @@ void masked_blit(BITMAP * source, BITMAP * dest, int source_x, int source_y, int
     __asm volatile ("jsr -624(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_d2), "r"(_d3), "r"(_d4), "r"(_d5), "r"(_a6) : "cc", "memory");
 }
 
-void masked_stretch_blit(BITMAP * source, BITMAP * dest, int source_x, int source_y, int source_w, int source_h, int dest_x, int dest_y, int dest_w, int dest_h)
+void masked_stretch_blit(BITMAP *source, BITMAP *dest, int source_x, int source_y, int source_w, int source_h, int dest_x, int dest_y, int dest_w, int dest_h)
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -1362,7 +1362,7 @@ int mouse_needs_poll(void)
     return (int)_d0;
 }
 
-void override_config_file(const char * filename)
+void override_config_file(const char *filename)
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -1374,7 +1374,7 @@ void override_config_file(const char * filename)
     __asm volatile ("jsr -648(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
 }
 
-int pack_fclose(PACKFILE * f)
+int pack_fclose(PACKFILE *f)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (int)0;
@@ -1387,7 +1387,7 @@ int pack_fclose(PACKFILE * f)
     return (int)_d0;
 }
 
-int pack_feof(PACKFILE * f)
+int pack_feof(PACKFILE *f)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (int)0;
@@ -1400,7 +1400,7 @@ int pack_feof(PACKFILE * f)
     return (int)_d0;
 }
 
-PACKFILE * pack_fopen(const char * filename, const char * mode)
+PACKFILE * pack_fopen(const char *filename, const char *mode)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (PACKFILE *)0;
@@ -1413,7 +1413,7 @@ PACKFILE * pack_fopen(const char * filename, const char * mode)
     return (PACKFILE *)_d0;
 }
 
-PACKFILE * pack_fopen_chunk(PACKFILE * f, int pack)
+PACKFILE * pack_fopen_chunk(PACKFILE *f, int pack)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (PACKFILE *)0;
@@ -1426,7 +1426,7 @@ PACKFILE * pack_fopen_chunk(PACKFILE * f, int pack)
     return (PACKFILE *)_d0;
 }
 
-int pack_fputs(const char * p, PACKFILE * f)
+int pack_fputs(const char *p, PACKFILE *f)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (int)0;
@@ -1439,7 +1439,7 @@ int pack_fputs(const char * p, PACKFILE * f)
     return (int)_d0;
 }
 
-long pack_fwrite(const void * p, long n, PACKFILE * f)
+long pack_fwrite(const void *p, long n, PACKFILE *f)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (long)0;
@@ -1452,7 +1452,7 @@ long pack_fwrite(const void * p, long n, PACKFILE * f)
     return (long)_d0;
 }
 
-int pack_getc(PACKFILE * f)
+int pack_getc(PACKFILE *f)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (int)0;
@@ -1465,7 +1465,7 @@ int pack_getc(PACKFILE * f)
     return (int)_d0;
 }
 
-long pack_igetl(PACKFILE * f)
+long pack_igetl(PACKFILE *f)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (long)0;
@@ -1478,7 +1478,7 @@ long pack_igetl(PACKFILE * f)
     return (long)_d0;
 }
 
-long pack_iputl(long l, PACKFILE * f)
+long pack_iputl(long l, PACKFILE *f)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (long)0;
@@ -1491,7 +1491,7 @@ long pack_iputl(long l, PACKFILE * f)
     return (long)_d0;
 }
 
-long pack_mgetl(PACKFILE * f)
+long pack_mgetl(PACKFILE *f)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (long)0;
@@ -1504,7 +1504,7 @@ long pack_mgetl(PACKFILE * f)
     return (long)_d0;
 }
 
-long pack_mputl(long l, PACKFILE * f)
+long pack_mputl(long l, PACKFILE *f)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (long)0;
@@ -1517,7 +1517,7 @@ long pack_mputl(long l, PACKFILE * f)
     return (long)_d0;
 }
 
-int pack_ungetc(int c, PACKFILE * f)
+int pack_ungetc(int c, PACKFILE *f)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (int)0;
@@ -1530,7 +1530,7 @@ int pack_ungetc(int c, PACKFILE * f)
     return (int)_d0;
 }
 
-void pivot_scaled_sprite(BITMAP * bmp, BITMAP * sprite, int x, int y, int cx, int cy, fixed angle, fixed scale)
+void pivot_scaled_sprite(BITMAP *bmp, BITMAP *sprite, int x, int y, int cx, int cy, fixed angle, fixed scale)
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -1546,7 +1546,7 @@ void pivot_scaled_sprite(BITMAP * bmp, BITMAP * sprite, int x, int y, int cx, in
     __asm volatile ("jsr -726(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_d2), "r"(_d3), "r"(_d4), "r"(_d5), "r"(_a6) : "cc", "memory");
 }
 
-void pivot_sprite(BITMAP * bmp, BITMAP * sprite, int x, int y, int cx, int cy, fixed angle)
+void pivot_sprite(BITMAP *bmp, BITMAP *sprite, int x, int y, int cx, int cy, fixed angle)
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -1561,7 +1561,7 @@ void pivot_sprite(BITMAP * bmp, BITMAP * sprite, int x, int y, int cx, int cy, f
     __asm volatile ("jsr -732(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_d2), "r"(_d3), "r"(_d4), "r"(_a6) : "cc", "memory");
 }
 
-int play_midi(MIDI * midi, int loop)
+int play_midi(MIDI *midi, int loop)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (int)0;
@@ -1574,7 +1574,7 @@ int play_midi(MIDI * midi, int loop)
     return (int)_d0;
 }
 
-int play_sample(const SAMPLE * spl, int vol, int pan, int freq, int loop)
+int play_sample(const SAMPLE *spl, int vol, int pan, int freq, int loop)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (int)0;
@@ -1602,7 +1602,7 @@ int poll_joystick(void)
     return (int)_d0;
 }
 
-void polygon(BITMAP * bmp, int vertices, const int * points, int color)
+void polygon(BITMAP *bmp, int vertices, const int *points, int color)
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -1626,7 +1626,7 @@ void position_mouse(int x, int y)
     __asm volatile ("jsr -762(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
 }
 
-void put_backslash(char * filename)
+void put_backslash(char *filename)
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -1638,7 +1638,7 @@ void put_backslash(char * filename)
     __asm volatile ("jsr -768(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
 }
 
-void putpixel(BITMAP * bmp, int x, int y, int color)
+void putpixel(BITMAP *bmp, int x, int y, int color)
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -1664,7 +1664,7 @@ int readkey(void)
     return (int)_d0;
 }
 
-void rectfill(BITMAP * bmp, int x1, int y1, int x2, int y2, int color)
+void rectfill(BITMAP *bmp, int x1, int y1, int x2, int y2, int color)
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -1715,7 +1715,7 @@ void remove_mouse(void)
     __asm volatile ("jsr -804(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
 }
 
-void remove_param_int(void(*proc)(void *param), void * param)
+void remove_param_int(void (*proc)(void *param), void *param)
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -1739,7 +1739,7 @@ void remove_timer(void)
     __asm volatile ("jsr -816(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
 }
 
-char * replace_filename(char * dest, const char * path, const char * filename, int size)
+char * replace_filename(char *dest, const char *path, const char *filename, int size)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (char *)0;
@@ -1766,7 +1766,7 @@ int request_scroll(int x, int y)
     return (int)_d0;
 }
 
-int request_video_bitmap(BITMAP * bitmap)
+int request_video_bitmap(BITMAP *bitmap)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (int)0;
@@ -1791,7 +1791,7 @@ void reserve_voices(int digi_voices, int midi_voices)
     __asm volatile ("jsr -840(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
 }
 
-void rest_callback(unsigned int time, void(*callback)(void))
+void rest_callback(unsigned int time, void (*callback)(void))
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -1803,7 +1803,7 @@ void rest_callback(unsigned int time, void(*callback)(void))
     __asm volatile ("jsr -846(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
 }
 
-void rotate_scaled_sprite(BITMAP * bmp, BITMAP * sprite, int x, int y, fixed angle, fixed scale)
+void rotate_scaled_sprite(BITMAP *bmp, BITMAP *sprite, int x, int y, fixed angle, fixed scale)
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -1817,7 +1817,7 @@ void rotate_scaled_sprite(BITMAP * bmp, BITMAP * sprite, int x, int y, fixed ang
     __asm volatile ("jsr -852(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_d2), "r"(_d3), "r"(_a6) : "cc", "memory");
 }
 
-void rotate_sprite(BITMAP * bmp, BITMAP * sprite, int x, int y, fixed angle)
+void rotate_sprite(BITMAP *bmp, BITMAP *sprite, int x, int y, fixed angle)
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -1830,7 +1830,7 @@ void rotate_sprite(BITMAP * bmp, BITMAP * sprite, int x, int y, fixed angle)
     __asm volatile ("jsr -858(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_d2), "r"(_a6) : "cc", "memory");
 }
 
-int save_bitmap(const char * filename, BITMAP * bmp, const RGB * pal)
+int save_bitmap(const char *filename, BITMAP *bmp, const RGB *pal)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (int)0;
@@ -1844,7 +1844,7 @@ int save_bitmap(const char * filename, BITMAP * bmp, const RGB * pal)
     return (int)_d0;
 }
 
-int save_bmp_pf(PACKFILE * f, BITMAP * bmp, const RGB * pal)
+int save_bmp_pf(PACKFILE *f, BITMAP *bmp, const RGB *pal)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (int)0;
@@ -1858,7 +1858,7 @@ int save_bmp_pf(PACKFILE * f, BITMAP * bmp, const RGB * pal)
     return (int)_d0;
 }
 
-int save_pcx_pf(PACKFILE * f, BITMAP * bmp, const RGB * pal)
+int save_pcx_pf(PACKFILE *f, BITMAP *bmp, const RGB *pal)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (int)0;
@@ -1899,7 +1899,7 @@ void scare_mouse_area(int x, int y, int w, int h)
     __asm volatile ("jsr -888(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_d2), "r"(_d3), "r"(_a6) : "cc", "memory");
 }
 
-void set_clip_rect(BITMAP * bitmap, int x1, int y1, int x2, int y2)
+void set_clip_rect(BITMAP *bitmap, int x1, int y1, int x2, int y2)
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -1913,7 +1913,7 @@ void set_clip_rect(BITMAP * bitmap, int x1, int y1, int x2, int y2)
     __asm volatile ("jsr -894(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_d2), "r"(_d3), "r"(_a6) : "cc", "memory");
 }
 
-int set_close_button_callback(void(*proc)(void))
+int set_close_button_callback(void (*proc)(void))
 {
     struct Library *const _b = a4_base();
     if (!_b) return (int)0;
@@ -1926,7 +1926,7 @@ int set_close_button_callback(void(*proc)(void))
     return (int)_d0;
 }
 
-void set_color(int idx, const RGB * p)
+void set_color(int idx, const RGB *p)
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -1962,7 +1962,7 @@ void set_color_depth(int depth)
     __asm volatile ("jsr -918(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
 }
 
-void set_config_string(const char * section, const char * name, const char * val)
+void set_config_string(const char *section, const char *name, const char *val)
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -1975,7 +1975,7 @@ void set_config_string(const char * section, const char * name, const char * val
     __asm volatile ("jsr -924(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a2), "r"(_a6) : "cc", "memory");
 }
 
-int set_display_switch_callback(int dir, void(*cb)(void))
+int set_display_switch_callback(int dir, void (*cb)(void))
 {
     struct Library *const _b = a4_base();
     if (!_b) return (int)0;
@@ -2042,7 +2042,7 @@ void set_mouse_range(int x1, int y1, int x2, int y2)
     __asm volatile ("jsr -954(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_d2), "r"(_d3), "r"(_a6) : "cc", "memory");
 }
 
-void set_mouse_sprite(BITMAP * sprite)
+void set_mouse_sprite(BITMAP *sprite)
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -2054,7 +2054,7 @@ void set_mouse_sprite(BITMAP * sprite)
     __asm volatile ("jsr -960(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
 }
 
-void set_palette_range(const RGB * p, int from, int to, int retracesync)
+void set_palette_range(const PALETTE p, int from, int to, int retracesync)
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -2091,7 +2091,7 @@ void set_volume(int digi_volume, int midi_volume)
     __asm volatile ("jsr -978(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
 }
 
-void show_mouse(BITMAP * bmp)
+void show_mouse(BITMAP *bmp)
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -2115,7 +2115,7 @@ void simulate_keypress(int keycode)
     __asm volatile ("jsr -990(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
 }
 
-void spline(BITMAP * bmp, const int * points, int color)
+void spline(BITMAP *bmp, const int points[8], int color)
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -2139,7 +2139,7 @@ void stop_midi(void)
     __asm volatile ("jsr -1002(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
 }
 
-int text_length(const FONT * f, const char * str)
+int text_length(const FONT *f, const char *str)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (int)0;
@@ -2152,7 +2152,7 @@ int text_length(const FONT * f, const char * str)
     return (int)_d0;
 }
 
-void textout(BITMAP * bmp, const FONT * f, const char * s, int x, int y, int color)
+void textout(BITMAP *bmp, const FONT *f, const char *s, int x, int y, int color)
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -2166,7 +2166,7 @@ void textout(BITMAP * bmp, const FONT * f, const char * s, int x, int y, int col
     __asm volatile ("jsr -1014(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a2), "r"(_d2), "r"(_a6) : "cc", "memory");
 }
 
-void textout_ex(BITMAP * bmp, const FONT * f, const char * s, int x, int y, int color, int bg)
+void textout_ex(BITMAP *bmp, const FONT *f, const char *s, int x, int y, int color, int bg)
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -2181,7 +2181,7 @@ void textout_ex(BITMAP * bmp, const FONT * f, const char * s, int x, int y, int 
     __asm volatile ("jsr -1020(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a2), "r"(_d2), "r"(_d3), "r"(_a6) : "cc", "memory");
 }
 
-void textout_right(BITMAP * bmp, const FONT * f, const char * s, int x, int y, int color)
+void textout_right(BITMAP *bmp, const FONT *f, const char *s, int x, int y, int color)
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -2195,7 +2195,7 @@ void textout_right(BITMAP * bmp, const FONT * f, const char * s, int x, int y, i
     __asm volatile ("jsr -1026(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a2), "r"(_d2), "r"(_a6) : "cc", "memory");
 }
 
-void textout_right_ex(BITMAP * bmp, const FONT * f, const char * s, int x, int y, int color, int bg)
+void textout_right_ex(BITMAP *bmp, const FONT *f, const char *s, int x, int y, int color, int bg)
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -2222,7 +2222,7 @@ void timer_simulate_retrace(int enable)
     __asm volatile ("jsr -1038(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
 }
 
-const char * uconvert(const char * s, int type, char * buf, int newtype, int size)
+const char * uconvert(const char *s, int type, char *buf, int newtype, int size)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (const char *)0;
@@ -2236,7 +2236,7 @@ const char * uconvert(const char * s, int type, char * buf, int newtype, int siz
     return (const char *)_d0;
 }
 
-int uinsert(char * s, int index, int c)
+int uinsert(char *s, int index, int c)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (int)0;
@@ -2249,7 +2249,7 @@ int uinsert(char * s, int index, int c)
     return (int)_d0;
 }
 
-void unload_datafile(DATAFILE * dat)
+void unload_datafile(DATAFILE *dat)
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -2261,7 +2261,7 @@ void unload_datafile(DATAFILE * dat)
     __asm volatile ("jsr -1056(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
 }
 
-void unload_datafile_object(DATAFILE * dat)
+void unload_datafile_object(DATAFILE *dat)
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
@@ -2285,7 +2285,7 @@ void unselect_palette(void)
     __asm volatile ("jsr -1068(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
 }
 
-int ustrnicmp(const char * s1, const char * s2, int n)
+int ustrnicmp(const char *s1, const char *s2, int n)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (int)0;
@@ -2298,7 +2298,7 @@ int ustrnicmp(const char * s1, const char * s2, int n)
     return (int)_d0;
 }
 
-char * ustrtok_r(char * s, const char * set, char ** last)
+char * ustrtok_r(char *s, const char *set, char **last)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (char *)0;
@@ -2312,7 +2312,7 @@ char * ustrtok_r(char * s, const char * set, char ** last)
     return (char *)_d0;
 }
 
-char * ustrupr(char * s)
+char * ustrupr(char *s)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (char *)0;
@@ -2325,7 +2325,7 @@ char * ustrupr(char * s)
     return (char *)_d0;
 }
 
-char * ustrzcpy(char * dest, int size, const char * src)
+char * ustrzcpy(char *dest, int size, const char *src)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (char *)0;
@@ -2338,7 +2338,7 @@ char * ustrzcpy(char * dest, int size, const char * src)
     return (char *)_d0;
 }
 
-char * ustrzncpy(char * dest, int size, const char * src, int n)
+char * ustrzncpy(char *dest, int size, const char *src, int n)
 {
     struct Library *const _b = a4_base();
     if (!_b) return (char *)0;
@@ -2351,7 +2351,7 @@ char * ustrzncpy(char * dest, int size, const char * src, int n)
     return (char *)_d0;
 }
 
-void vline(BITMAP * bmp, int x, int y1, int y2, int color)
+void vline(BITMAP *bmp, int x, int y1, int y2, int color)
 {
     struct Library *const _b = a4_base();
     if (!_b) return;
