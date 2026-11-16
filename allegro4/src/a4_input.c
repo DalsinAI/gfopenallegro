@@ -180,6 +180,7 @@ static void joy_from(const acgame_input_state *st, JOYSTICK_INFO *j)
     if (st->key[ACGAME_KEY_FIRE1]) j->button[0].b = 1;
     if (st->key[ACGAME_KEY_FIRE2] && j->num_buttons > 1) j->button[1].b = 1;
 }
+#pragma pop_macro("key")
 
 /* one ACGame poll feeds keys, mouse and joystick */
 static void input_poll(void)

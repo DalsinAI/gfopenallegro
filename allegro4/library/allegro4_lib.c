@@ -97,13 +97,13 @@ void *memcpy(void *to, const void *from, unsigned long n)
     while (n--) *d++ = *s++;
     return to;
 }
-void *memmove(void *to, const void *from, unsigned long n)
+/* libnix's string.h makes memmove an inline call of __bcopz(from, to, n) */
+void __bcopz(const void *from, void *to, unsigned long n)
 {
     UBYTE *d = to; const UBYTE *s = from;
-    if (d <= s || d >= s + n) return memcpy(to, from, n);
+    if (d <= s || d >= s + n) { memcpy(to, from, n); return; }
     d += n; s += n;
     while (n--) *--d = *--s;
-    return to;
 }
 void *memset(void *p, int c, unsigned long n)
 {
