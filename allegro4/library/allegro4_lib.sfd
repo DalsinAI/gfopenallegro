@@ -383,4 +383,7 @@ void xor_mode(int on)(d0)
 void yield_timeslice()()
 void pop_config_state()()
 void push_config_state()()
+FONT * grab_font_from_bitmap(BITMAP * bmp)(a0)
+FONT * load_dat_font(const char * filename, RGB * pal, void * param)(a0,a1,a2)
+void midi_out(unsigned char * data, int length)(a0,d0)
 ==end

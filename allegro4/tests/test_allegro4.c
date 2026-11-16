@@ -848,6 +848,9 @@ static void test_compat(void)
     CHECK(strncmp(allegro_id, "Allegro 4", 9) == 0);
     CHECK(timer_driver && timer_driver->name && keyboard_driver->name && mouse_driver->name && joystick_driver->name);
     CHECK(KB_NORMAL != KB_EXTENDED);
+    CHECK_EQ(palette_color[0], 0);
+    CHECK_EQ(palette_color[37], 37);
+    CHECK_EQ(palette_color[255], 255);
     CHECK(COLORCONV_REDUCE_TO_256 & COLORCONV_32_TO_8);
     set_color_conversion(COLORCONV_REDUCE_TO_256);
     CHECK_EQ(get_color_conversion(), COLORCONV_REDUCE_TO_256);
@@ -857,6 +860,79 @@ static void test_compat(void)
     CHECK_EQ(get_config_int("game", "speed", 7), 7);
     pop_config_state();
     CHECK_EQ(get_config_int("game", "speed", 3), 3);
+}
+
+/* grab_font_from_bitmap, load_dat_font, midi_out (Timmy Time, Out of Cash) */
+static void test_fonts_more(void)
+{
+    BITMAP *b = create_bitmap(12, 6);
+    FONT *f;
+    FILE *fp;
+    PALETTE pal;
+    char *names[2];
+    int i;
+    /* border 7; glyph A 3x4 at (1,1), glyph B 2x4 at (5,1), glyph C 3x4 at (8,1) */
+    clear_to_color(b, 7);
+    rectfill(b, 1, 1, 3, 4, 0);
+    putpixel(b, 2, 2, 15);
+    rectfill(b, 5, 1, 6, 4, 0);
+    putpixel(b, 5, 1, 15);
+    rectfill(b, 8, 1, 10, 4, 0);
+    f = grab_font_from_bitmap(b);
+    CHECK(f != NULL);
+    if (f) {
+        CHECK(is_mono_font(f));
+        CHECK_EQ(get_font_range_begin(f, 0), 32);
+        CHECK_EQ(get_font_range_end(f, 0), 34);
+        CHECK_EQ(text_height(f), 4);
+        CHECK_EQ(text_length(f, " !\""), 3 + 2 + 3);
+        {
+            BITMAP *t = create_bitmap(10, 6);
+            clear_to_color(t, 0);
+            textout_ex(t, f, " !", 0, 0, 9, -1);
+            CHECK_EQ(getpixel(t, 1, 1), 9);          /* A's dot */
+            CHECK_EQ(getpixel(t, 3, 0), 9);          /* B's dot */
+            CHECK_EQ(getpixel(t, 0, 0), 0);
+            destroy_bitmap(t);
+        }
+        destroy_font(f);
+    }
+    putpixel(b, 9, 2, 20);                           /* a second colour: a colour font */
+    f = grab_font_from_bitmap(b);
+    CHECK(f && is_color_font(f));
+    destroy_font(f);
+    destroy_bitmap(b);
+
+    fp = fopen(tmp("font.dat"), "wb");
+    CHECK(fp != NULL);
+    if (!fp) return;
+    put32(fp, F_NOPACK_MAGIC);
+    put32(fp, DAT_MAGIC);
+    put32(fp, 3);
+    put_name(fp, "PAL");
+    put32(fp, DAT_PALETTE); put32(fp, 768); put32(fp, 768);
+    for (i = 0; i < 256; i++) { fputc((i & 63) << 2, fp); fputc(4, fp); fputc(8, fp); }   /* 8-bit guns */
+    put_name(fp, "SMALL");
+    put32(fp, DAT_FONT); put32(fp, 2 + 95 * 8); put32(fp, 2 + 95 * 8);
+    put16(fp, 8);
+    for (i = 0; i < 95 * 8; i++) fputc(0x80, fp);
+    put_name(fp, "BIG");
+    put32(fp, DAT_FONT); put32(fp, 2 + 95 * 16); put32(fp, 2 + 95 * 16);
+    put16(fp, 16);
+    for (i = 0; i < 95 * 16; i++) fputc(0xC0, fp);
+    fclose(fp);
+    memset(pal, 0, sizeof(pal));
+    f = load_dat_font(tmp("font.dat"), pal, NULL);
+    CHECK(f && text_height(f) == 8);
+    CHECK_EQ(pal[5].r, 5);
+    destroy_font(f);
+    names[0] = (char *)"BIG"; names[1] = NULL;
+    f = load_dat_font(tmp("font.dat"), NULL, names);
+    CHECK(f && text_height(f) == 16);
+    destroy_font(f);
+    names[0] = (char *)"NOPE";
+    CHECK(load_dat_font(tmp("font.dat"), NULL, names) == NULL);
+    midi_out((unsigned char *)"\x90\x40\x7f", 3);   /* silent, and safe */
 }
 
 int main(void)
@@ -881,6 +957,7 @@ int main(void)
     test_find();
     test_gui();
     test_compat();
+    test_fonts_more();
     allegro_exit();
     CHECK(!fake.open);
     {

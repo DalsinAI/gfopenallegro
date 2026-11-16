@@ -3038,6 +3038,31 @@ static void L_push_config_state(REG(a6, struct A4Base *_lb))
     LEAVE();
 }
 
+static FONT * L_grab_font_from_bitmap(REG(a0, BITMAP * bmp), REG(a6, struct A4Base *_lb))
+{
+    FONT * _r;
+    ENTER(_lb);
+    _r = grab_font_from_bitmap(bmp);
+    LEAVE();
+    return _r;
+}
+
+static FONT * L_load_dat_font(REG(a0, const char * filename), REG(a1, RGB * pal), REG(a2, void * param), REG(a6, struct A4Base *_lb))
+{
+    FONT * _r;
+    ENTER(_lb);
+    _r = load_dat_font(filename, pal, param);
+    LEAVE();
+    return _r;
+}
+
+static void L_midi_out(REG(a0, unsigned char * data), REG(d0, int length), REG(a6, struct A4Base *_lb))
+{
+    ENTER(_lb);
+    midi_out(data, length);
+    LEAVE();
+}
+
 static const APTR a4_vectors[] = {
     (APTR)lib_open, (APTR)lib_close, (APTR)lib_expunge, (APTR)lib_null,
     (APTR)L__getpixel,
@@ -3416,5 +3441,8 @@ static const APTR a4_vectors[] = {
     (APTR)L_yield_timeslice,
     (APTR)L_pop_config_state,
     (APTR)L_push_config_state,
+    (APTR)L_grab_font_from_bitmap,
+    (APTR)L_load_dat_font,
+    (APTR)L_midi_out,
     (APTR)-1,
 };

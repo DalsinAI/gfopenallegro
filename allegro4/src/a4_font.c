@@ -291,6 +291,91 @@ FONT *load_font(const char *filename, RGB *pal, void *param)
     return f;
 }
 
+FONT *load_dat_font(const char *filename, RGB *pal, void *param)
+{
+    char **names = (char **)param;
+    DATAFILE *d, *fo = NULL, *po = NULL;
+    FONT *f = NULL;
+    int i;
+    d = load_datafile(filename);
+    if (!d) return NULL;
+    if (names && names[0]) fo = find_datafile_object(d, names[0]);
+    else for (i = 0; d[i].type != DAT_END && !fo; i++) if (d[i].type == DAT_FONT) fo = &d[i];
+    if (names && names[1]) po = find_datafile_object(d, names[1]);
+    else for (i = 0; d[i].type != DAT_END && !po; i++) if (d[i].type == DAT_PALETTE) po = &d[i];
+    if (fo && fo->type == DAT_FONT) { f = (FONT *)fo->dat; fo->dat = NULL; fo->type = DAT_DATA; }
+    if (f && pal && po && po->type == DAT_PALETTE) memcpy(pal, po->dat, sizeof(PALETTE));
+    unload_datafile(d);
+    return f;
+}
+
+/* Allegro's font bitmap layout: the top-left pixel's colour draws a box
+ * round each glyph; a glyph's top-left corner is where that colour has
+ * three neighbours and the fourth (down-right) is not it */
+static int grab_find(BITMAP *b, int border, int *x, int *y, int *w, int *h)
+{
+    for (;;) {
+        if (*x >= b->w - 1) { *x = 0; (*y)++; if (*y >= b->h - 1) return 0; }
+        if (b->line[*y][*x] == border && b->line[*y][*x + 1] == border &&
+            b->line[*y + 1][*x] == border && b->line[*y + 1][*x + 1] != border) break;
+        (*x)++;
+    }
+    *w = 1;
+    while (*x + *w + 1 < b->w && b->line[*y + 1][*x + *w + 1] != border) (*w)++;
+    *h = 1;
+    while (*y + *h + 1 < b->h && b->line[*y + *h + 1][*x + 1] != border) (*h)++;
+    return 1;
+}
+
+FONT *grab_font_from_bitmap(BITMAP *bmp)
+{
+    FONT *f;
+    a4_range *r;
+    int border, x, y, w, h, n = 0, mono = 1, other = -1, maxh = 0, i, j;
+    if (!bmp || bmp->w < 2 || bmp->h < 2) return NULL;
+    border = bmp->line[0][0];
+    /* count the glyphs; mono when they hold 0 and at most one other colour */
+    for (x = 0, y = 0; grab_find(bmp, border, &x, &y, &w, &h); x += w) {
+        n++;
+        for (j = 0; j < h && mono; j++)
+            for (i = 0; i < w; i++) {
+                int p = bmp->line[y + 1 + j][x + 1 + i];
+                if (p == 0) continue;
+                if (other >= 0 && p != other) { mono = 0; break; }
+                other = p;
+            }
+    }
+    if (n == 0) return NULL;
+    f = (FONT *)a4_calloc(sizeof(FONT));
+    r = (a4_range *)a4_calloc(sizeof(a4_range));
+    if (!f || !r) { a4_free(f); a4_free(r); return NULL; }
+    r->begin = 32; r->end = 32 + n; r->mono = mono;
+    if (mono) r->glyphs = (FONT_GLYPH **)a4_calloc(sizeof(FONT_GLYPH *) * (size_t)n);
+    else r->bitmaps = (BITMAP **)a4_calloc(sizeof(BITMAP *) * (size_t)n);
+    if (!r->glyphs && !r->bitmaps) { a4_free(f); a4_free(r); return NULL; }
+    f->data = r;
+    for (n = 0, x = 0, y = 0; grab_find(bmp, border, &x, &y, &w, &h); x += w, n++) {
+        if (h > maxh) maxh = h;
+        if (mono) {
+            int stride = (w + 7) / 8;
+            FONT_GLYPH *g = (FONT_GLYPH *)a4_calloc(sizeof(FONT_GLYPH) + (size_t)(stride * h));
+            if (!g) continue;
+            g->w = (short)w; g->h = (short)h;
+            for (j = 0; j < h; j++)
+                for (i = 0; i < w; i++)
+                    if (bmp->line[y + 1 + j][x + 1 + i]) g->dat[j * stride + (i >> 3)] |= (unsigned char)(0x80 >> (i & 7));
+            r->glyphs[n] = g;
+        } else {
+            BITMAP *g = create_bitmap(w, h);
+            if (!g) continue;
+            for (j = 0; j < h; j++) memcpy(g->line[j], bmp->line[y + 1 + j] + x + 1, (size_t)w);
+            r->bitmaps[n] = g;
+        }
+    }
+    f->height = maxh;
+    return f;
+}
+
 /* ---- drawing text ------------------------------------------------------------------ */
 
 /* one character at x; returns its width. color -1: a colour font draws in

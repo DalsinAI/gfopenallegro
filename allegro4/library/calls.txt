@@ -375,3 +375,6 @@ xor_mode
 yield_timeslice
 pop_config_state
 push_config_state
+grab_font_from_bitmap
+load_dat_font
+midi_out

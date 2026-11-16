@@ -50,6 +50,13 @@ void (*retrace_proc)(void);
 RGB_MAP *rgb_map;
 COLOR_MAP *color_map;
 int _color_depth = 8;
+static int a4_palette_color[PAL_SIZE] = {
+#define A4_PC4(n) n, n + 1, n + 2, n + 3
+#define A4_PC16(n) A4_PC4(n), A4_PC4(n + 4), A4_PC4(n + 8), A4_PC4(n + 12)
+#define A4_PC64(n) A4_PC16(n), A4_PC16(n + 16), A4_PC16(n + 32), A4_PC16(n + 48)
+    A4_PC64(0), A4_PC64(64), A4_PC64(128), A4_PC64(192)
+};
+int *palette_color = a4_palette_color;
 GFX_DRIVER *gfx_driver;
 int gfx_capabilities;
 DIGI_DRIVER *digi_driver;

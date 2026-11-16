@@ -170,6 +170,9 @@ extern PALETTE black_palette, desktop_palette, default_palette;
 extern RGB_MAP *rgb_map;
 extern COLOR_MAP *color_map;
 extern int _color_depth;
+/* palette index -> colour to draw with: in 8-bit, palette_color[i] == i */
+#define A4_HAS_PALETTE_COLOR 1
+extern int *palette_color;
 
 void set_color(int idx, const RGB *p);
 void set_palette(const PALETTE p);
@@ -852,6 +855,10 @@ int save_pcx_pf(PACKFILE *f, BITMAP *bmp, const RGB *pal);
 void register_bitmap_file_type(const char *ext, BITMAP *(*load)(const char *filename, RGB *pal),
                                int (*save)(const char *filename, BITMAP *bmp, const RGB *pal));
 FONT *load_font(const char *filename, RGB *pal, void *param);
+/* param: NULL, or char *names[2] = { font object, palette object } (either NULL: the first) */
+FONT *load_dat_font(const char *filename, RGB *pal, void *param);
+/* glyphs in boxes of the border colour (the top-left pixel), from ' ' on */
+FONT *grab_font_from_bitmap(BITMAP *bmp);
 
 /* ---- sound ------------------------------------------------------------------------------- */
 
@@ -942,6 +949,7 @@ int play_midi(MIDI *midi, int loop);
 int play_looped_midi(MIDI *midi, int loop_start, int loop_end);
 void stop_midi(void);
 void midi_pause(void);
+void midi_out(unsigned char *data, int length);
 void midi_resume(void);
 int midi_seek(int target);
 int get_midi_length(MIDI *midi);

@@ -388,6 +388,7 @@ int play_midi(MIDI *m, int loop) { (void)loop; midi_pos = m ? 0 : -1; return 0; 
 int play_looped_midi(MIDI *m, int ls, int le) { (void)ls; (void)le; return play_midi(m, TRUE); }
 void stop_midi(void) { midi_pos = -1; }
 void midi_pause(void) {}
+void midi_out(unsigned char *data, int length) { (void)data; (void)length; }   /* MIDI is silent */
 void midi_resume(void) {}
 int midi_seek(int target) { midi_pos = target; return 0; }
 int get_midi_length(MIDI *m) { (void)m; return 0; }

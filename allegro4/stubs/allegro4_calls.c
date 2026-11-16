@@ -4916,3 +4916,42 @@ void push_config_state(void)
     register struct Library *_a6 __asm("a6") = _b;
     __asm volatile ("jsr -2280(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
 }
+
+FONT * grab_font_from_bitmap(BITMAP *bmp)
+{
+    struct Library *const _b = a4_base();
+    if (!_b) return (FONT *)0;
+    register long _d0 __asm("d0") = 0;
+    register long _d1 __asm("d1") = 0;
+    register BITMAP * _a0 __asm("a0") = bmp;
+    register long _a1 __asm("a1") = 0;
+    register struct Library *_a6 __asm("a6") = _b;
+    __asm volatile ("jsr -2286(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
+    return (FONT *)_d0;
+}
+
+FONT * load_dat_font(const char *filename, RGB *pal, void *param)
+{
+    struct Library *const _b = a4_base();
+    if (!_b) return (FONT *)0;
+    register long _d0 __asm("d0") = 0;
+    register long _d1 __asm("d1") = 0;
+    register const char * _a0 __asm("a0") = filename;
+    register RGB * _a1 __asm("a1") = pal;
+    register void * _a2 __asm("a2") = param;
+    register struct Library *_a6 __asm("a6") = _b;
+    __asm volatile ("jsr -2292(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a2), "r"(_a6) : "cc", "memory");
+    return (FONT *)_d0;
+}
+
+void midi_out(unsigned char *data, int length)
+{
+    struct Library *const _b = a4_base();
+    if (!_b) return;
+    register int _d0 __asm("d0") = length;
+    register long _d1 __asm("d1") = 0;
+    register unsigned char * _a0 __asm("a0") = data;
+    register long _a1 __asm("a1") = 0;
+    register struct Library *_a6 __asm("a6") = _b;
+    __asm volatile ("jsr -2298(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
+}
