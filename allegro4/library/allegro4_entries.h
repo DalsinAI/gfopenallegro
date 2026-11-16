@@ -3038,6 +3038,61 @@ static void L_push_config_state(REG(a6, struct A4Base *_lb))
     LEAVE();
 }
 
+static void L_set_config_data(REG(a0, const char * data), REG(d0, int length), REG(a6, struct A4Base *_lb))
+{
+    ENTER(_lb);
+    set_config_data(data, length);
+    LEAVE();
+}
+
+static void L_override_config_data(REG(a0, const char * data), REG(d0, int length), REG(a6, struct A4Base *_lb))
+{
+    ENTER(_lb);
+    override_config_data(data, length);
+    LEAVE();
+}
+
+static int L_get_config_hex(REG(a0, const char * section), REG(a1, const char * name), REG(d0, int def), REG(a6, struct A4Base *_lb))
+{
+    int _r;
+    ENTER(_lb);
+    _r = get_config_hex(section, name, def);
+    LEAVE();
+    return _r;
+}
+
+static void L_set_config_hex(REG(a0, const char * section), REG(a1, const char * name), REG(d0, int val), REG(a6, struct A4Base *_lb))
+{
+    ENTER(_lb);
+    set_config_hex(section, name, val);
+    LEAVE();
+}
+
+static int L_get_config_id(REG(a0, const char * section), REG(a1, const char * name), REG(d0, int def), REG(a6, struct A4Base *_lb))
+{
+    int _r;
+    ENTER(_lb);
+    _r = get_config_id(section, name, def);
+    LEAVE();
+    return _r;
+}
+
+static void L_set_config_id(REG(a0, const char * section), REG(a1, const char * name), REG(d0, int val), REG(a6, struct A4Base *_lb))
+{
+    ENTER(_lb);
+    set_config_id(section, name, val);
+    LEAVE();
+}
+
+static char ** L_get_config_argv(REG(a0, const char * section), REG(a1, const char * name), REG(a2, int * argc), REG(a6, struct A4Base *_lb))
+{
+    char ** _r;
+    ENTER(_lb);
+    _r = get_config_argv(section, name, argc);
+    LEAVE();
+    return _r;
+}
+
 static const APTR a4_vectors[] = {
     (APTR)lib_open, (APTR)lib_close, (APTR)lib_expunge, (APTR)lib_null,
     (APTR)L__getpixel,
@@ -3416,5 +3471,12 @@ static const APTR a4_vectors[] = {
     (APTR)L_yield_timeslice,
     (APTR)L_pop_config_state,
     (APTR)L_push_config_state,
+    (APTR)L_set_config_data,
+    (APTR)L_override_config_data,
+    (APTR)L_get_config_hex,
+    (APTR)L_set_config_hex,
+    (APTR)L_get_config_id,
+    (APTR)L_set_config_id,
+    (APTR)L_get_config_argv,
     (APTR)-1,
 };

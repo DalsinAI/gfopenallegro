@@ -146,6 +146,24 @@ char *_a4_strdup(const char *s)
 
 uint64_t file_size_ex(const char *filename) { return (uint64_t)file_size(filename); }
 
+/* the config calls with a float: read and written as text here, with the game's C library */
+float get_config_float(const char *section, const char *name, float def)
+{
+    const char *v = get_config_string(section, name, NULL);
+    char *end;
+    double d;
+    if (!v || !*v) return def;
+    d = strtod(v, &end);
+    return end == v ? def : (float)d;
+}
+
+void set_config_float(const char *section, const char *name, float val)
+{
+    char buf[32];
+    snprintf(buf, sizeof(buf), "%g", (double)val);
+    set_config_string(section, name, buf);
+}
+
 void hsv_to_rgb(float h, float s, float v, int *r, int *g, int *b)
 {
     float f, p, q, t;

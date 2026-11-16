@@ -142,6 +142,9 @@ int d_slider_proc(int msg, DIALOG *d, int c);
  * frame round d and, when listsize rows do not fit in height, the scroll bar */
 #define A4_HAS_DRAW_SCROLLABLE_FRAME 1
 void _draw_scrollable_frame(DIALOG *d, int listsize, int offset, int height, int fg_color, int bg);
+/* and its text-box helper: wraps thetext into the box, sets *listsize, draws from offset when draw */
+void _draw_textbox(char *thetext, int *listsize, int draw, int offset, int wword, int tabsize,
+                   int x, int y, int w, int h, int disabled, int fore, int deselect, int disable);
 
 /* the old window calls: Amiga screens have no close button, so they only
  * keep what they are given (set_close_button_callback is the newer one) */
@@ -189,6 +192,7 @@ extern int *palette_color;          /* colour index of palette entry i: i itself
 extern FONT *_a4_default_font;      /* the font allegro_init set up */
 #define _default_font (*_a4_default_font)
 const char *get_config_text(const char *msg);   /* no language files: msg itself */
+void reload_config_texts(const char *new_language);    /* kept for get_config_text */
 /* the screen mode selector: one dialog with the sizes this screen can open;
  * the card is always GFX_AUTODETECT and the depth 8 */
 int gfx_mode_select(int *card, int *w, int *h);

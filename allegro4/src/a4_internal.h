@@ -212,7 +212,7 @@ struct a4_state {
     FONT *builtin_font;
     /* misc */
     char text[A4_TEXT_MAX];                 /* scratch for formatted text */
-    int config_dummy;
+    void *config;                           /* a4_config.c's */
     void (*close_button)(void);
     int color_conv;
     const RGB *selected_palette;
@@ -233,6 +233,7 @@ void *a4_malloc(size_t n);
 void *a4_calloc(size_t n);
 void *a4_realloc(void *p, size_t oldn, size_t n);
 void a4_free(void *p);
+void a4_config_shutdown(void);
 char *a4_strdup0(const char *s);
 
 a4_file *a4_os_open(const char *name, int write);

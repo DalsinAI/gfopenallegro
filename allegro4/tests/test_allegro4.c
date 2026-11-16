@@ -860,6 +860,103 @@ static void test_compat(void)
 }
 
 
+
+/* ---- configuration ------------------------------------------------------------------------ */
+
+static void test_config(void)
+{
+    static const char script[] =
+        "# Kraptor's level script\r\n"
+        "top = 1\r\n"
+        "[Nivel_1]\r\n"
+        "  enemigos = 12  \r\n"
+        "speed=0x1F\r\n"
+        "scale = 1.5\r\n"
+        "name = \"first level\"\r\n"
+        "ia = up down \"to the left\" 7\r\n"
+        "[sound]\n"
+        "card = SB16\n"
+        "blank =\n"
+        "last = 9";                                 /* no newline at the end */
+    char line[128];
+    FILE *fp;
+    int n;
+    char **av;
+
+    set_config_data(script, (int)strlen(script));
+    CHECK_EQ(get_config_int(NULL, "top", 0), 1);
+    CHECK_EQ(get_config_int("nivel_1", "ENEMIGOS", 0), 12);       /* any case */
+    CHECK_EQ(get_config_int("[Nivel_1]", "enemigos", 0), 12);     /* with brackets */
+    CHECK_EQ(get_config_int("Nivel_1", "speed", 0), 31);           /* 0x */
+    CHECK_EQ(get_config_hex("Nivel_1", "speed", 0), 0x1F);
+    CHECK(get_config_float("Nivel_1", "scale", 0) == 1.5f);
+    CHECK(get_config_float("Nivel_1", "nothing", 2.25f) == 2.25f);
+    CHECK_EQ(get_config_int("Nivel_1", "top", -5), -5);            /* top is in the global section */
+    CHECK_EQ(get_config_int("sound", "last", 0), 9);
+    CHECK(strcmp(get_config_string("sound", "blank", "def"), "") == 0);
+    CHECK(strcmp(get_config_string("sound", "missing", "def"), "def") == 0);
+    CHECK_EQ(get_config_id("sound", "card", 0), (int)AL_ID('S', 'B', '1', '6'));
+    CHECK_EQ(get_config_int("sound", "card", 4), 4);               /* not a number */
+    av = get_config_argv("Nivel_1", "ia", &n);
+    CHECK_EQ(n, 4);
+    if (av && n == 4) {
+        CHECK(strcmp(av[0], "up") == 0);
+        CHECK(strcmp(av[2], "to the left") == 0);
+        CHECK(strcmp(av[3], "7") == 0);
+        CHECK(av[4] == NULL);
+    }
+    CHECK(get_config_argv("x", "y", &n) == NULL);
+    CHECK_EQ(n, 0);
+
+    /* an override wins, and set_config_* writes into it when it has the name */
+    override_config_data("[sound]\ncard = GUS\n", 18);
+    CHECK_EQ(get_config_id("sound", "card", 0), (int)AL_ID('G', 'U', 'S', ' '));
+    CHECK_EQ(get_config_int("sound", "last", 0), 9);
+    override_config_data(NULL, 0);
+    CHECK_EQ(get_config_id("sound", "card", 0), (int)AL_ID('S', 'B', '1', '6'));
+
+    /* a file: made on set, kept comments, written on flush, read back */
+    fp = fopen(tmp("k.cfg"), "w");
+    if (fp) { fputs("# my settings\n[video]\nw = 320\n", fp); fclose(fp); }
+    set_config_file(tmp("k.cfg"));
+    CHECK_EQ(get_config_int("video", "w", 0), 320);
+    set_config_int("video", "w", 640);
+    set_config_int("video", "h", -480);
+    set_config_hex("video", "mask", 0xBEEF);
+    set_config_float("sound", "volume", 0.75f);
+    set_config_id("sound", "card", AL_ID('A', 'H', 'I', ' '));
+    set_config_string(NULL, "lang", "es");
+    flush_config_file();
+    fp = fopen(tmp("k.cfg"), "r");
+    CHECK(fp != NULL);
+    if (fp) {
+        CHECK(fgets(line, sizeof(line), fp) && strcmp(line, "# my settings\n") == 0);
+        fclose(fp);
+    }
+    set_config_file(NULL);
+    CHECK_EQ(get_config_int("video", "w", 0), 0);
+    set_config_file(tmp("k.cfg"));
+    CHECK_EQ(get_config_int("video", "w", 0), 640);
+    CHECK_EQ(get_config_int("video", "h", 0), -480);
+    CHECK_EQ(get_config_hex("video", "mask", 0), 0xBEEF);
+    CHECK(get_config_float("sound", "volume", 0) == 0.75f);
+    CHECK_EQ(get_config_id("sound", "card", 0), (int)AL_ID('A', 'H', 'I', ' '));
+    CHECK(strcmp(get_config_string("", "lang", ""), "es") == 0);
+    set_config_string("video", "h", "");                           /* an empty value removes it */
+    CHECK_EQ(get_config_int("video", "h", 7), 7);
+
+    /* push and pop keep the file; the inner state starts empty */
+    push_config_state();
+    CHECK_EQ(get_config_int("video", "w", 1), 1);
+    set_config_data("[video]\nw = 2\n", 14);
+    CHECK_EQ(get_config_int("video", "w", 1), 2);
+    pop_config_state();
+    CHECK_EQ(get_config_int("video", "w", 0), 640);
+    pop_config_state();                                             /* nothing pushed: no change */
+    CHECK_EQ(get_config_int("video", "w", 0), 640);
+    set_config_file(NULL);
+}
+
 /* ---- menus (Kraptor's menu bar) ------------------------------------------------------- */
 
 static int mn_calls, mn_last;
@@ -1022,7 +1119,29 @@ static void test_menus(void)
     CHECK_EQ(palette_color[0], 0);
     CHECK_EQ(palette_color[200], 200);
     CHECK(&_default_font == font);
+    reload_config_texts("es");
     CHECK(strcmp(get_config_text("Sound"), "Sound") == 0);
+    CHECK_EQ(stricmp("Kraptor", "KRAPTOR"), 0);
+    CHECK_EQ(fmul(itofix(3), itofix(4)), itofix(12));
+    CHECK_EQ(fdiv(itofix(3), itofix(4)), ftofix(0.75));
+    set_trans_blender(128, 128, 128, 128);
+    {
+        /* Allegro's text-box helper: counts lines, draws from the offset, clears below */
+        static char tb[] = "one two three four five six seven eight nine ten";
+        int ls = 0, cw = text_length(font, "x"), th2 = text_height(font);
+        _draw_textbox(tb, &ls, 0, 0, TRUE, 8, 0, 0, cw * 14 + 8, th2 * 3 + 4, FALSE, 15, 1, 8);
+        CHECK(ls >= 4);
+        clear_to_color(screen, 0);
+        _draw_textbox(tb, &ls, 1, 1, TRUE, 8, 0, 0, cw * 14 + 8, th2 * 3 + 4, FALSE, 15, 1, 8);
+        CHECK_EQ(getpixel(screen, cw * 14, 2), 1);           /* the background of a drawn row */
+        CHECK_EQ(getpixel(screen, cw * 14 + 20, 2), 0);      /* nothing outside the box */
+        {
+            int lc = 0;
+            _draw_textbox(tb, &lc, 0, 0, FALSE, 8, 0, 0, cw * 14 + 8, th2 * 3 + 4, FALSE, 15, 1, 8);
+            CHECK(lc >= ls - 1);                              /* without words: cut anywhere */
+        }
+    }
+    CHECK(stricmp("a", "b") < 0);
     gui_mouse_x = NULL;
 }
 
@@ -1182,6 +1301,7 @@ int main(void)
     test_find();
     test_gui();
     test_compat();
+    test_config();
     test_menus();
     test_fli();
     allegro_exit();

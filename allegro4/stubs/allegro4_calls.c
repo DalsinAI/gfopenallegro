@@ -4916,3 +4916,91 @@ void push_config_state(void)
     register struct Library *_a6 __asm("a6") = _b;
     __asm volatile ("jsr -2280(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
 }
+
+void set_config_data(const char *data, int length)
+{
+    struct Library *const _b = a4_base();
+    if (!_b) return;
+    register int _d0 __asm("d0") = length;
+    register long _d1 __asm("d1") = 0;
+    register const char * _a0 __asm("a0") = data;
+    register long _a1 __asm("a1") = 0;
+    register struct Library *_a6 __asm("a6") = _b;
+    __asm volatile ("jsr -2286(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
+}
+
+void override_config_data(const char *data, int length)
+{
+    struct Library *const _b = a4_base();
+    if (!_b) return;
+    register int _d0 __asm("d0") = length;
+    register long _d1 __asm("d1") = 0;
+    register const char * _a0 __asm("a0") = data;
+    register long _a1 __asm("a1") = 0;
+    register struct Library *_a6 __asm("a6") = _b;
+    __asm volatile ("jsr -2292(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
+}
+
+int get_config_hex(const char *section, const char *name, int def)
+{
+    struct Library *const _b = a4_base();
+    if (!_b) return (int)0;
+    register int _d0 __asm("d0") = def;
+    register long _d1 __asm("d1") = 0;
+    register const char * _a0 __asm("a0") = section;
+    register const char * _a1 __asm("a1") = name;
+    register struct Library *_a6 __asm("a6") = _b;
+    __asm volatile ("jsr -2298(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
+    return (int)_d0;
+}
+
+void set_config_hex(const char *section, const char *name, int val)
+{
+    struct Library *const _b = a4_base();
+    if (!_b) return;
+    register int _d0 __asm("d0") = val;
+    register long _d1 __asm("d1") = 0;
+    register const char * _a0 __asm("a0") = section;
+    register const char * _a1 __asm("a1") = name;
+    register struct Library *_a6 __asm("a6") = _b;
+    __asm volatile ("jsr -2304(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
+}
+
+int get_config_id(const char *section, const char *name, int def)
+{
+    struct Library *const _b = a4_base();
+    if (!_b) return (int)0;
+    register int _d0 __asm("d0") = def;
+    register long _d1 __asm("d1") = 0;
+    register const char * _a0 __asm("a0") = section;
+    register const char * _a1 __asm("a1") = name;
+    register struct Library *_a6 __asm("a6") = _b;
+    __asm volatile ("jsr -2310(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
+    return (int)_d0;
+}
+
+void set_config_id(const char *section, const char *name, int val)
+{
+    struct Library *const _b = a4_base();
+    if (!_b) return;
+    register int _d0 __asm("d0") = val;
+    register long _d1 __asm("d1") = 0;
+    register const char * _a0 __asm("a0") = section;
+    register const char * _a1 __asm("a1") = name;
+    register struct Library *_a6 __asm("a6") = _b;
+    __asm volatile ("jsr -2316(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
+}
+
+char ** get_config_argv(const char *section, const char *name, int *argc)
+{
+    struct Library *const _b = a4_base();
+    if (!_b) return (char **)0;
+    register long _d0 __asm("d0") = 0;
+    register long _d1 __asm("d1") = 0;
+    register const char * _a0 __asm("a0") = section;
+    register const char * _a1 __asm("a1") = name;
+    register int * _a2 __asm("a2") = argc;
+    register struct Library *_a6 __asm("a6") = _b;
+    __asm volatile ("jsr -2322(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a2), "r"(_a6) : "cc", "memory");
+    return (char **)_d0;
+}

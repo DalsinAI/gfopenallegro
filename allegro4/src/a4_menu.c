@@ -27,6 +27,7 @@ int (*gui_list_proc)(int msg, DIALOG *d, int c) = d_list_proc;
 int (*gui_text_list_proc)(int msg, DIALOG *d, int c) = d_text_list_proc;
 
 const char *get_config_text(const char *msg) { return msg; }
+void reload_config_texts(const char *new_language) { (void)new_language; }
 
 /* ---- drawing ----------------------------------------------------------------------- */
 

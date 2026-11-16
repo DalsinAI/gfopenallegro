@@ -375,3 +375,10 @@ xor_mode
 yield_timeslice
 pop_config_state
 push_config_state
+set_config_data
+override_config_data
+get_config_hex
+set_config_hex
+get_config_id
+set_config_id
+get_config_argv

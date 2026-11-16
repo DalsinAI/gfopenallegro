@@ -967,6 +967,72 @@ int d_textbox_proc(int msg, DIALOG *d, int c)
     return D_O_K;
 }
 
+/* Allegro's text-box helper (guiproc.c) for games' own text boxes: wraps
+ * thetext into the w x h box (at words when wword, else anywhere; tabs to
+ * tabsize spaces), sets *listsize to the lines, and when draw is set draws
+ * the lines from offset on: fore (or disable when disabled) on deselect */
+struct dtb_ctx { int draw, offset, rows, x, y, w, fg, bg, last; };
+
+static void dtb_emit(void *p, const char *s, int n, int line)
+{
+    struct dtb_ctx *t = (struct dtb_ctx *)p;
+    BITMAP *b = gui_get_screen();
+    char buf[256];
+    int row = line - t->offset, th = text_height(font);
+    if (!t->draw || row < 0 || row >= t->rows) return;
+    if (n > (int)sizeof(buf) - 1) n = (int)sizeof(buf) - 1;
+    memcpy(buf, s, (size_t)n);
+    buf[n] = 0;
+    rectfill(b, t->x, t->y + row * th, t->x + t->w - 1, t->y + (row + 1) * th - 1, t->bg);
+    textout_ex(b, font, buf, t->x + 2, t->y + row * th, t->fg, -1);
+    t->last = row;
+}
+
+static int wrap_chars(const char *s, int width, void (*emit)(void *, const char *, int, int), void *ctx)
+{
+    int lines = 0;
+    char one[2] = { 0, 0 };
+    while (s && *s) {
+        int w = 0, n = 0;
+        while (s[n] && s[n] != '\n') {
+            one[0] = s[n];
+            w += text_length(font, one);
+            if (w > width && n > 0) break;
+            n++;
+        }
+        if (emit) emit(ctx, s, n, lines);
+        lines++;
+        s += n;
+        if (*s == '\n') s++;
+    }
+    return lines;
+}
+
+void _draw_textbox(char *thetext, int *listsize, int draw, int offset, int wword, int tabsize,
+                   int x, int y, int w, int h, int disabled, int fore, int deselect, int disable)
+{
+    struct dtb_ctx t;
+    char *text;
+    int i, n = 0, len = thetext ? (int)strlen(thetext) : 0, th = text_height(font), lines;
+    if (tabsize < 1) tabsize = 1;
+    text = (char *)malloc((size_t)len * tabsize + 1);
+    if (!text) return;
+    for (i = 0; i < len; i++) {
+        if (thetext[i] == '\t') { int k; for (k = 0; k < tabsize; k++) text[n++] = ' '; }
+        else if (thetext[i] != '\r') text[n++] = thetext[i];
+    }
+    text[n] = 0;
+    t.draw = draw; t.offset = offset; t.rows = th > 0 ? (h - 4) / th : 1;
+    t.x = x + 2; t.y = y + 2; t.w = w - 4; t.fg = disabled ? disable : fore; t.bg = deselect; t.last = -1;
+    lines = wword ? wrap_text(text, w - 8, dtb_emit, &t) : wrap_chars(text, w - 8, dtb_emit, &t);
+    if (listsize) *listsize = lines;
+    if (draw) {                                     /* the rows below the text */
+        int from = t.last + 1;
+        if (from < t.rows) rectfill(gui_get_screen(), t.x, t.y + from * th, t.x + t.w - 1, y + h - 3, deselect);
+    }
+    free(text);
+}
+
 /* ---- d_slider_proc: d1 the most, d2 the value, dp a handle bitmap, dp2 a
  *      callback int (*)(void *dp3, int d2) called as the value changes ------------------ */
 
