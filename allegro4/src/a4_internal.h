@@ -53,6 +53,7 @@ struct a4_public {
     RGB *default_palette;                   /* the game's copy: set at set_gfx_mode */
     RGB *desktop_palette;
     int *palette_color;                     /* the game's palette_color table (256) */
+    volatile long *midi_time;               /* since 1.1: a 1.0 game's is not there (see size) */
 };
 
 #ifdef A4_LIBRARY
@@ -218,6 +219,10 @@ struct a4_state {
     DIGI_DRIVER digi_drv;
     MIDI_DRIVER midi_drv;
     int audio_out_ok;                       /* acgame took audio */
+    int midi_mode;                          /* A4_SYNTH_: how MIDI sounds */
+    int midi_playing, midi_looping, midi_paused;
+    unsigned long midi_loops;               /* times the song had started again when last looked at */
+    long midi_ls, midi_le;                  /* play_looped_midi's beats (-1: the whole song) */
     /* datafiles */
     struct a4_datatype types[32];
     int ntypes;
@@ -292,6 +297,25 @@ void a4_mark_screen(BITMAP *bmp);
 void a4_present_if_dirty(void);
 void a4_present(void);
 void a4_audio_pump(void);
+/* the synthesiser MIDI plays on (gfopensynth.library; the tests' is a fake).
+ * a4_synth_open says how it sounds: */
+#define A4_SYNTH_NONE 0                     /* there is none: music is silent */
+#define A4_SYNTH_PORT 1                     /* it plays itself (AkikoPlus's MIDI port) */
+#define A4_SYNTH_MIX  2                     /* the mixer takes its sound with a4_synth_render */
+int a4_synth_open(unsigned rate);
+void a4_synth_close(void);
+int a4_synth_play(const unsigned char *smf, unsigned long len, int loop);   /* a MIDI file's bytes (copied); 0 or -1 */
+void a4_synth_stop(void);
+void a4_synth_pause(int pause);
+void a4_synth_seek(unsigned long beat);
+void a4_synth_bytes(const unsigned char *data, unsigned long len);          /* raw MIDI, as to a port */
+void a4_synth_volume(int volume);           /* 0 to 255 */
+int a4_synth_playing(void);
+unsigned long a4_synth_beat(void);
+unsigned long a4_synth_ms(void);
+unsigned long a4_synth_loops(void);
+unsigned long a4_synth_length_ms(const unsigned char *smf, unsigned long len);
+void a4_synth_render(int16_t *buf, unsigned frames);                        /* interleaved stereo */
 int a4_is_screen(BITMAP *bmp);
 BITMAP *a4_bitmap_root(BITMAP *bmp);
 FONT *a4_builtin_font(void);

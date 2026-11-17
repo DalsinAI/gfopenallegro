@@ -3,10 +3,16 @@
  *
  * Digital sound: samples (8/16-bit, mono/stereo, Allegro 4's unsigned
  * form), 16 voices with volume, pan, frequency and loop modes, mixed to
- * signed 16-bit stereo and handed to ACGame's audio call. MIDI files load
- * and their position counts, but notes are not played yet (no synthesiser
- * in ACGame); a game runs with its music silent.
+ * signed 16-bit stereo and handed to ACGame's audio call.
+ *
+ * MIDI plays on GFOpenSynth (gfopensynth.library, through the a4_synth_*
+ * calls): on AkikoPlus's MIDI port when the machine has one, where the
+ * synth in the machine sounds it; else the synth runs here from a
+ * SoundFont and is mixed with the samples, so the music goes out the same
+ * way they do (ACGame: AHI, or Paula). With no synth a game runs with its
+ * music silent.
  */
+#include <stddef.h>
 #include "a4_internal.h"
 #include "acgame/platform.h"
 
@@ -15,6 +21,20 @@
 
 int detect_digi_driver(int id) { (void)id; return A4_VOICES; }
 int detect_midi_driver(int id) { (void)id; return 0; }
+
+#define MIDI_GSYN AL_ID('G','S','Y','N')
+
+/* midi_time is the game's own variable; a game built with liballeg 1.0 has
+ * none to give */
+static void set_midi_time(long t)
+{
+#ifdef A4_LIBRARY
+    if (A4P->size >= offsetof(struct a4_public, midi_time) + sizeof(A4P->midi_time) && A4P->midi_time)
+        *A4P->midi_time = t;
+#else
+    midi_time = t;
+#endif
+}
 void reserve_voices(int d, int m) { (void)d; (void)m; }
 void set_volume_per_voice(int scale) { (void)scale; }
 
@@ -30,7 +50,16 @@ int install_sound(int digi, int midi, const char *cfg)
     A4S->digi_drv.voices = digi == DIGI_NONE ? 0 : A4_VOICES;
     A4S->midi_drv.id = MIDI_NONE;
     A4S->midi_drv.name = A4S->midi_drv.desc = A4S->midi_drv.ascii_name = "None";
-    (void)midi;
+    A4S->midi_drv.voices = 0;
+    A4S->midi_mode = midi == MIDI_NONE ? A4_SYNTH_NONE : a4_synth_open(MIX_RATE);
+    A4S->midi_playing = A4S->midi_paused = 0;
+    if (A4S->midi_mode != A4_SYNTH_NONE) {
+        A4S->midi_drv.id = MIDI_GSYN;
+        A4S->midi_drv.name = A4S->midi_drv.ascii_name = "GFOpenSynth";
+        A4S->midi_drv.desc = A4S->midi_mode == A4_SYNTH_PORT ? "GFOpenSynth on AkikoPlus's MIDI port" : "GFOpenSynth, mixed with the samples";
+        A4S->midi_drv.voices = 24;
+        a4_synth_volume(255);
+    }
     digi_driver = &A4S->digi_drv;
     midi_driver = &A4S->midi_drv;
     A4S->mix_last_ms = acgame_platform_ticks_ms();
@@ -43,12 +72,22 @@ void remove_sound(void)
 {
     if (!A4S->sound_on) return;
     memset(A4S->voices, 0, sizeof(A4S->voices));
+    if (A4S->midi_mode != A4_SYNTH_NONE) { a4_synth_stop(); a4_synth_close(); }
+    A4S->midi_mode = A4_SYNTH_NONE;
+    A4S->midi_playing = 0;
     A4S->sound_on = 0;
     digi_driver = NULL;
     midi_driver = NULL;
 }
 
-void set_volume(int d, int m) { if (d >= 0) A4S->digi_volume = MID(0, d, 255); if (m >= 0) A4S->midi_volume = MID(0, m, 255); }
+void set_volume(int d, int m)
+{
+    if (d >= 0) A4S->digi_volume = MID(0, d, 255);
+    if (m >= 0) {
+        A4S->midi_volume = MID(0, m, 255);
+        if (A4S->midi_mode != A4_SYNTH_NONE) a4_synth_volume(A4S->midi_volume);
+    }
+}
 void get_volume(int *d, int *m) { if (d) *d = A4S->digi_volume; if (m) *m = A4S->midi_volume; }
 void set_hardware_volume(int d, int m) { set_volume(d, m); }
 
@@ -304,13 +343,39 @@ void a4_mix_s16stereo(int16_t *out, int frames, int rate)
     a4_free(acc);
 }
 
+/* a playing song's place, for the game: midi_pos (beats), midi_time
+ * (seconds), the end of a song played once, and play_looped_midi's beats */
+static void midi_track(void)
+{
+    unsigned long loops;
+    long beat;
+    if (!A4S->midi_playing || A4S->midi_mode == A4_SYNTH_NONE) return;
+    if (!a4_synth_playing()) {              /* played once, and over */
+        A4S->midi_playing = 0;
+        midi_pos = -1;
+        return;
+    }
+    beat = (long)a4_synth_beat();
+    loops = a4_synth_loops();
+    if (A4S->midi_looping && ((A4S->midi_le > 0 && beat >= A4S->midi_le) || loops != A4S->midi_loops)) {
+        if (A4S->midi_ls > 0 || loops == A4S->midi_loops) {
+            a4_synth_seek((unsigned long)(A4S->midi_ls > 0 ? A4S->midi_ls : 0));
+            beat = A4S->midi_ls > 0 ? A4S->midi_ls : 0;
+        }
+        A4S->midi_loops = a4_synth_loops();
+    }
+    midi_pos = beat;
+    set_midi_time((long)(a4_synth_ms() / 1000u));
+}
+
 /* at the poll points: mix the time since the last pump and give it to
  * ACGame; while ACGame has no audio output (acgame.library 1.1 returns -1)
- * the voices still advance, so a game that waits for a sound to end goes on */
+ * the voices still advance, so a game that waits for a sound to end goes on.
+ * A synth that is mixed here (A4_SYNTH_MIX) is added to the samples. */
 void a4_audio_pump(void)
 {
     uint32_t now, ms;
-    int frames;
+    int frames, i;
     int16_t buf[MIX_CHUNK * 2];
     if (!A4S->sound_on) return;
     now = acgame_platform_ticks_ms();
@@ -322,16 +387,18 @@ void a4_audio_pump(void)
     while (frames > 0) {
         int n = frames > MIX_CHUNK ? MIX_CHUNK : frames;
         a4_mix_s16stereo(buf, n, MIX_RATE);
+        if (A4S->midi_mode == A4_SYNTH_MIX) {
+            int16_t syn[MIX_CHUNK * 2];
+            a4_synth_render(syn, (unsigned)n);
+            for (i = 0; i < n * 2; i++) { int v = buf[i] + syn[i]; buf[i] = (int16_t)MID(-32768, v, 32767); }
+        }
         if (A4S->audio_out_ok && acgame_platform_audio_s16stereo(buf, (unsigned)n, MIX_RATE) != 0) A4S->audio_out_ok = 0;
         frames -= n;
     }
-    {
-        /* MIDI position: beats are not timed without a player; count seconds */
-        if (midi_pos >= 0 && A4S->midi_volume >= 0) { }
-    }
+    midi_track();
 }
 
-/* ---- MIDI (loaded, not played) -------------------------------------------------------- */
+/* ---- MIDI ----------------------------------------------------------------------------- */
 
 MIDI *a4_read_midi_object(PACKFILE *f)
 {
@@ -384,14 +451,85 @@ void destroy_midi(MIDI *m)
     a4_free(m);
 }
 
-int play_midi(MIDI *m, int loop) { (void)loop; midi_pos = m ? 0 : -1; return 0; }
-int play_looped_midi(MIDI *m, int ls, int le) { (void)ls; (void)le; return play_midi(m, TRUE); }
-void stop_midi(void) { midi_pos = -1; }
-void midi_pause(void) {}
-void midi_out(unsigned char *data, int length) { (void)data; (void)length; }   /* MIDI is silent */
-void midi_resume(void) {}
-int midi_seek(int target) { midi_pos = target; return 0; }
-int get_midi_length(MIDI *m) { (void)m; return 0; }
+/* a MIDI as the Standard MIDI File the synth plays: a header and its
+ * tracks (format 1; one track is format 0). NULL when it has no tracks. */
+static unsigned char *midi_to_smf(const MIDI *m, unsigned long *len)
+{
+    unsigned long n = 14;
+    unsigned char *smf, *p;
+    int c, tracks = 0;
+    for (c = 0; c < MIDI_TRACKS; c++)
+        if (m->track[c].data && m->track[c].len > 0) { n += 8 + (unsigned long)m->track[c].len; tracks++; }
+    if (!tracks || !(smf = (unsigned char *)a4_malloc(n))) return NULL;
+    memcpy(smf, "MThd\0\0\0\6\0", 9);
+    smf[9] = (unsigned char)(tracks > 1);
+    smf[10] = 0; smf[11] = (unsigned char)tracks;
+    smf[12] = (unsigned char)(m->divisions >> 8); smf[13] = (unsigned char)m->divisions;
+    p = smf + 14;
+    for (c = 0; c < MIDI_TRACKS; c++) {
+        unsigned long l = (unsigned long)m->track[c].len;
+        if (!m->track[c].data || m->track[c].len <= 0) continue;
+        memcpy(p, "MTrk", 4);
+        p[4] = (unsigned char)(l >> 24); p[5] = (unsigned char)(l >> 16); p[6] = (unsigned char)(l >> 8); p[7] = (unsigned char)l;
+        memcpy(p + 8, m->track[c].data, l);
+        p += 8 + l;
+    }
+    *len = n;
+    return smf;
+}
+
+static int midi_start(MIDI *m, int loop, long ls, long le)
+{
+    unsigned char *smf;
+    unsigned long len = 0;
+    int r = 0;
+    if (A4S->midi_mode != A4_SYNTH_NONE) a4_synth_stop();
+    A4S->midi_playing = A4S->midi_paused = 0;
+    set_midi_time(0);
+    if (!m) { midi_pos = -1; return 0; }
+    midi_pos = 0;
+    if (A4S->midi_mode == A4_SYNTH_NONE) return 0;     /* no synth: silent, and the game goes on */
+    if (!(smf = midi_to_smf(m, &len))) { midi_pos = -1; return -1; }
+    A4S->midi_looping = loop != 0;
+    A4S->midi_ls = ls; A4S->midi_le = le;
+    A4S->midi_loops = 0;
+    if (a4_synth_play(smf, len, loop != 0) != 0) { midi_pos = -1; r = -1; }
+    else {
+        A4S->midi_playing = 1;
+        if (ls > 0) { a4_synth_seek((unsigned long)ls); midi_pos = ls; }
+    }
+    a4_free(smf);
+    return r;
+}
+
+int play_midi(MIDI *m, int loop) { return midi_start(m, loop, -1, -1); }
+int play_looped_midi(MIDI *m, int ls, int le) { return midi_start(m, TRUE, ls, le); }
+void stop_midi(void) { midi_start(NULL, FALSE, -1, -1); }
+void midi_pause(void) { if (A4S->midi_playing && !A4S->midi_paused) { A4S->midi_paused = 1; a4_synth_pause(1); } }
+void midi_resume(void) { if (A4S->midi_playing && A4S->midi_paused) { A4S->midi_paused = 0; a4_synth_pause(0); } }
+void midi_out(unsigned char *data, int length)
+{
+    if (data && length > 0 && A4S->midi_mode != A4_SYNTH_NONE) a4_synth_bytes(data, (unsigned long)length);
+}
+int midi_seek(int target)
+{
+    if (target < 0) target = 0;
+    if (A4S->midi_playing) a4_synth_seek((unsigned long)target);
+    midi_pos = target;
+    return 0;
+}
+/* seconds; as Allegro 4's, it ends the song that plays */
+int get_midi_length(MIDI *m)
+{
+    unsigned char *smf;
+    unsigned long len = 0, ms;
+    stop_midi();
+    if (!m || A4S->midi_mode == A4_SYNTH_NONE || !(smf = midi_to_smf(m, &len))) return 0;
+    ms = a4_synth_length_ms(smf, len);
+    a4_free(smf);
+    set_midi_time((long)(ms / 1000u));
+    return (int)(ms / 1000u);
+}
 
 /* the mixer: ACGame mixes; the quality is kept for the game to read back */
 int get_mixer_quality(void) { return A4S->mixer_quality; }

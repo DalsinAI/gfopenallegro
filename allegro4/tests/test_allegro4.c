@@ -6,6 +6,7 @@
  */
 #include <allegro.h>
 #include "fake_acgame.h"
+#include "fake_synth.h"
 #include <stdio.h>
 #include <unistd.h>
 
@@ -614,6 +615,145 @@ static void test_sound(void)
     }
     destroy_sample(s);
     remove_sound();
+}
+
+/* ---- MIDI on the synth ---------------------------------------------------------------------- */
+
+void a4_audio_pump(void);
+enum { SYNTH_NONE, SYNTH_PORT, SYNTH_MIX };     /* a4_internal.h's A4_SYNTH_ */
+
+static void pump_ms(unsigned ms)
+{
+    a4_test_clock_us += (uint64_t)ms * 1000u;
+    a4_audio_pump();
+}
+
+static void test_midi(void)
+{
+    static const unsigned char t0[] = { 0x00, 0xFF, 0x51, 0x03, 0x07, 0xA1, 0x20, 0x00, 0xFF, 0x2F, 0x00 };
+    static const unsigned char t1[] = { 0x00, 0x90, 0x3C, 0x64, 0x60, 0x80, 0x3C, 0x00, 0x00, 0xFF, 0x2F, 0x00 };
+    MIDI *m;
+    FILE *fp;
+    int dv, mv;
+    unsigned long before;
+
+    /* a MIDI file as a game ships it */
+    fp = fopen(tmp("song.mid"), "wb");
+    fwrite("MThd\0\0\0\6\0\1\0\2\0\140", 1, 14, fp);
+    fwrite("MTrk\0\0\0", 1, 7, fp); fputc(sizeof(t0), fp); fwrite(t0, 1, sizeof(t0), fp);
+    fwrite("MTrk\0\0\0", 1, 7, fp); fputc(sizeof(t1), fp); fwrite(t1, 1, sizeof(t1), fp);
+    fclose(fp);
+    m = load_midi(tmp("song.mid"));
+    CHECK(m != NULL && m->divisions == 96 && m->track[0].len == (int)sizeof(t0) && m->track[1].len == (int)sizeof(t1));
+
+    /* no synth: silent, as before, and the game goes on */
+    memset(&fake_synth, 0, sizeof(fake_synth));
+    a4_test_clock_us = 5000000;
+    CHECK_EQ(install_sound(DIGI_AUTODETECT, MIDI_AUTODETECT, NULL), 0);
+    CHECK_EQ(midi_driver->id, MIDI_NONE);
+    CHECK_EQ(play_midi(m, FALSE), 0);
+    CHECK_EQ(midi_pos, 0);
+    midi_out((unsigned char *)"\x90\x40\x7f", 3);
+    CHECK_EQ(fake_synth.plays, 0); CHECK_EQ(fake_synth.nbytes, 0);
+    stop_midi();
+    CHECK_EQ(midi_pos, -1);
+    CHECK_EQ(get_midi_length(m), 0);
+    remove_sound();
+    CHECK_EQ(fake_synth.closes, 0);
+
+    /* MIDI_NONE asked: the synth is left alone */
+    fake_synth.mode = SYNTH_PORT;
+    CHECK_EQ(install_sound(DIGI_AUTODETECT, MIDI_NONE, NULL), 0);
+    CHECK_EQ(fake_synth.opens, 0);
+    remove_sound();
+
+    /* the synth on the MIDI port: it plays itself, nothing is mixed here */
+    CHECK_EQ(install_sound(DIGI_AUTODETECT, MIDI_AUTODETECT, NULL), 0);
+    CHECK_EQ(fake_synth.opens, 1); CHECK_EQ(fake_synth.rate, 22050);
+    CHECK(midi_driver->id != MIDI_NONE && strcmp(midi_driver->name, "GFOpenSynth") == 0);
+    CHECK_EQ(fake_synth.volume, 255);
+    CHECK_EQ(play_midi(m, FALSE), 0);
+    CHECK_EQ(fake_synth.plays, 1); CHECK_EQ(fake_synth.loop, 0);
+    /* what it was given is the file again */
+    CHECK_EQ(fake_synth.smf_len, 14 + 8 + sizeof(t0) + 8 + sizeof(t1));
+    CHECK(memcmp(fake_synth.smf, "MThd\0\0\0\6\0\1\0\2\0\140", 14) == 0);
+    CHECK(memcmp(fake_synth.smf + 14, "MTrk\0\0\0", 7) == 0 && fake_synth.smf[21] == sizeof(t0));
+    CHECK(memcmp(fake_synth.smf + 22, t0, sizeof(t0)) == 0);
+    CHECK(memcmp(fake_synth.smf + 22 + sizeof(t0) + 8, t1, sizeof(t1)) == 0);
+    CHECK_EQ(midi_pos, 0);
+    fake_synth.beat = 3; fake_synth.ms = 2500;
+    fake.audio_ok = 1;
+    pump_ms(20);
+    CHECK_EQ(midi_pos, 3); CHECK_EQ(midi_time, 2);
+    CHECK_EQ(fake_synth.rendered, 0);
+    midi_pause();
+    CHECK_EQ(fake_synth.paused, 1);
+    midi_pause();
+    midi_resume();
+    CHECK_EQ(fake_synth.paused, 0);
+    CHECK_EQ(midi_seek(1), 0);
+    CHECK_EQ(fake_synth.last_seek, 1); CHECK_EQ(midi_pos, 1);
+    set_volume(-1, 128);
+    CHECK_EQ(fake_synth.volume, 128);
+    get_volume(&dv, &mv);
+    CHECK_EQ(dv, 255); CHECK_EQ(mv, 128);
+    midi_out((unsigned char *)"\x90\x40\x7f", 3);
+    CHECK(fake_synth.nbytes == 3 && fake_synth.bytes[0] == 0x90 && fake_synth.bytes[2] == 0x7f);
+    /* played once: at its end midi_pos goes negative */
+    fake_synth.playing = 0;
+    pump_ms(20);
+    CHECK_EQ(midi_pos, -1);
+    /* its length, without playing it */
+    fake_synth.length_ms = 61500;
+    CHECK_EQ(get_midi_length(m), 61); CHECK_EQ(midi_time, 61);
+    /* looped between beats 2 and 6 */
+    CHECK_EQ(play_looped_midi(m, 2, 6), 0);
+    CHECK_EQ(fake_synth.loop, 1); CHECK_EQ(fake_synth.last_seek, 2); CHECK_EQ(midi_pos, 2);
+    fake_synth.beat = 5;
+    pump_ms(20);
+    CHECK_EQ(midi_pos, 5);
+    fake_synth.beat = 6;
+    pump_ms(20);
+    CHECK_EQ(fake_synth.last_seek, 2); CHECK_EQ(midi_pos, 2);
+    fake_synth.beat = 0; fake_synth.loops = 1;           /* the song ended before beat 6 and began again */
+    pump_ms(20);
+    CHECK_EQ(fake_synth.beat, 2); CHECK_EQ(midi_pos, 2);
+    /* a plain loop is the synth's own */
+    CHECK_EQ(play_midi(m, TRUE), 0);
+    before = (unsigned long)fake_synth.seeks;
+    fake_synth.beat = 0; fake_synth.loops = 1;
+    pump_ms(20);
+    CHECK_EQ(fake_synth.seeks, before); CHECK_EQ(midi_pos, 0);
+    play_midi(NULL, FALSE);
+    CHECK_EQ(midi_pos, -1); CHECK_EQ(fake_synth.playing, 0);
+    remove_sound();
+    CHECK_EQ(fake_synth.closes, 1); CHECK_EQ(fake_synth.open, 0);
+
+    /* no port: the synth is mixed with the samples and goes out with them */
+    fake_synth.mode = SYNTH_MIX;
+    fake_synth.level = 1000;
+    fake.audio_frames = 0; fake.audio_last = 0;
+    CHECK_EQ(install_sound(DIGI_AUTODETECT, MIDI_AUTODETECT, NULL), 0);
+    CHECK_EQ(play_midi(m, FALSE), 0);
+    pump_ms(100);
+    CHECK_EQ(fake_synth.rendered, 2205);
+    CHECK_EQ(fake.audio_frames, 2205);
+    CHECK_EQ(fake.audio_last, 1000);
+    {
+        SAMPLE *s = create_sample(16, FALSE, 22050, 4410);
+        int i;
+        for (i = 0; i < 4410; i++) ((unsigned short *)s->data)[i] = 0x8000 + 32000;
+        play_sample(s, 255, 128, 1000, FALSE);
+        fake_synth.level = 20000;
+        pump_ms(50);
+        CHECK(fake.audio_last > 20000 && fake.audio_last <= 32767);     /* added, and clipped not wrapped */
+        destroy_sample(s);
+    }
+    remove_sound();
+    CHECK_EQ(fake_synth.closes, 2);
+    destroy_midi(m);
+    a4_test_clock_us = 0;
+    memset(&fake_synth, 0, sizeof(fake_synth));
 }
 
 /* ---- directory searches ---------------------------------------------------------------------- */
@@ -1739,6 +1879,7 @@ int main(void)
     test_pictures();
     test_text();
     test_sound();
+    test_midi();
     test_find();
     test_gui();
     test_compat();

@@ -140,6 +140,7 @@ int install_allegro(int system_id, int *errno_ptr, int (*atexit_ptr)(void (*)(vo
     pub.default_palette = default_palette;
     pub.desktop_palette = desktop_palette;
     pub.palette_color = palette_color;
+    pub.midi_time = &midi_time;
     if (a4_install(&pub, system_id) != 0) return -1;
     _a4_default_font = font;
     if (atexit_ptr && !exit_registered) { exit_registered = 1; atexit_ptr(allegro_exit); }
