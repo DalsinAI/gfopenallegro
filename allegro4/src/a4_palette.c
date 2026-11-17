@@ -13,6 +13,8 @@ void set_color(int idx, const RGB *p)
     A4S->palette[idx][1] = p->g & 63;
     A4S->palette[idx][2] = p->b & 63;
     A4S->palette_dirty = 1;
+    if (_color_depth != 8 && A4S->pub && palette_color)
+        palette_color[idx] = makecol_depth(_color_depth, a4_pal63to255(p->r & 63), a4_pal63to255(p->g & 63), a4_pal63to255(p->b & 63));
 }
 
 void set_palette_range(const PALETTE p, int from, int to, int retracesync)
@@ -149,10 +151,24 @@ int makecol8(int r, int g, int b)
     if (rgb_map) return rgb_map->data[(r & 255) >> 3][(g & 255) >> 3][(b & 255) >> 3];
     return bestfit_color(match_palette(tmp), (r & 255) >> 2, (g & 255) >> 2, (b & 255) >> 2);
 }
-int makecol(int r, int g, int b) { return makecol8(r, g, b); }
-int makecol_depth(int d, int r, int g, int b) { (void)d; return makecol8(r, g, b); }
-int makeacol(int r, int g, int b, int a) { (void)a; return makecol8(r, g, b); }
-int makeacol_depth(int d, int r, int g, int b, int a) { (void)d; (void)a; return makecol8(r, g, b); }
+int makecol15(int r, int g, int b) { return ((r & 255) >> 3) << 10 | ((g & 255) >> 3) << 5 | (b & 255) >> 3; }
+int makecol16(int r, int g, int b) { return ((r & 255) >> 3) << 11 | ((g & 255) >> 2) << 5 | (b & 255) >> 3; }
+int makecol24(int r, int g, int b) { return (r & 255) << 16 | (g & 255) << 8 | (b & 255); }
+int makecol32(int r, int g, int b) { return (r & 255) << 16 | (g & 255) << 8 | (b & 255); }
+int makeacol32(int r, int g, int b, int a) { return (int)((uint32_t)(a & 255) << 24 | (uint32_t)makecol32(r, g, b)); }
+int makecol_depth(int d, int r, int g, int b)
+{
+    switch (d) {
+    case 15: return makecol15(r, g, b);
+    case 16: return makecol16(r, g, b);
+    case 24: return makecol24(r, g, b);
+    case 32: return makecol32(r, g, b);
+    default: return makecol8(r, g, b);
+    }
+}
+int makeacol_depth(int d, int r, int g, int b, int a) { return d == 32 ? makeacol32(r, g, b, a) : makecol_depth(d, r, g, b); }
+int makecol(int r, int g, int b) { return makecol_depth(_color_depth, r, g, b); }
+int makeacol(int r, int g, int b, int a) { return makeacol_depth(_color_depth, r, g, b, a); }
 
 static int gun(int c, int k)
 {
@@ -161,21 +177,129 @@ static int gun(int c, int k)
     int v = k == 0 ? p[c & 255].r : k == 1 ? p[c & 255].g : p[c & 255].b;
     return a4_pal63to255(v);
 }
+static int s5(int v) { v &= 31; return (v << 3) | (v >> 2); }
+static int s6(int v) { v &= 63; return (v << 2) | (v >> 4); }
 int getr8(int c) { return gun(c, 0); }
 int getg8(int c) { return gun(c, 1); }
 int getb8(int c) { return gun(c, 2); }
-int getr(int c) { return getr8(c); }
-int getg(int c) { return getg8(c); }
-int getb(int c) { return getb8(c); }
-int geta(int c) { (void)c; return 255; }
-int getr_depth(int d, int c) { (void)d; return getr8(c); }
-int getg_depth(int d, int c) { (void)d; return getg8(c); }
-int getb_depth(int d, int c) { (void)d; return getb8(c); }
+int getr15(int c) { return s5(c >> 10); }
+int getg15(int c) { return s5(c >> 5); }
+int getb15(int c) { return s5(c); }
+int getr16(int c) { return s5(c >> 11); }
+int getg16(int c) { return s6(c >> 5); }
+int getb16(int c) { return s5(c); }
+int getr24(int c) { return (c >> 16) & 255; }
+int getg24(int c) { return (c >> 8) & 255; }
+int getb24(int c) { return c & 255; }
+int getr32(int c) { return (c >> 16) & 255; }
+int getg32(int c) { return (c >> 8) & 255; }
+int getb32(int c) { return c & 255; }
+int geta32(int c) { return (int)(((uint32_t)c >> 24) & 255); }
+int getr_depth(int d, int c) { int r, g, b; a4_unpack(d, (uint32_t)c, &r, &g, &b); return r; }
+int getg_depth(int d, int c) { int r, g, b; a4_unpack(d, (uint32_t)c, &r, &g, &b); return g; }
+int getb_depth(int d, int c) { int r, g, b; a4_unpack(d, (uint32_t)c, &r, &g, &b); return b; }
+int geta_depth(int d, int c) { return d == 32 ? geta32(c) : 255; }
+int getr(int c) { return getr_depth(_color_depth, c); }
+int getg(int c) { return getg_depth(_color_depth, c); }
+int getb(int c) { return getb_depth(_color_depth, c); }
+int geta(int c) { return geta_depth(_color_depth, c); }
 
-void set_color_depth(int depth) { _color_depth = depth; }
+uint32_t a4_pack(int depth, int r, int g, int b) { return (uint32_t)makecol_depth(depth, r, g, b); }
+
+void a4_unpack(int depth, uint32_t c, int *r, int *g, int *b)
+{
+    switch (depth) {
+    case 15: *r = getr15((int)c); *g = getg15((int)c); *b = getb15((int)c); break;
+    case 16: *r = getr16((int)c); *g = getg16((int)c); *b = getb16((int)c); break;
+    case 24: case 32: *r = (int)(c >> 16) & 255; *g = (int)(c >> 8) & 255; *b = (int)c & 255; break;
+    default: *r = getr8((int)c); *g = getg8((int)c); *b = getb8((int)c); break;
+    }
+}
+
+uint32_t a4_convert(uint32_t c, int from, int to)
+{
+    int r, g, b;
+    if (from == to) return c;
+    if ((from == 24 && to == 32) || (from == 32 && to == 24)) return c & 0xFFFFFF;
+    a4_unpack(from, c, &r, &g, &b);
+    return a4_pack(to, r, g, b);
+}
+
+void a4_expand_palette(int depth, const RGB *pal, uint32_t out[256])
+{
+    RGB tmp[256];
+    int i;
+    if (!pal) pal = match_palette(tmp);
+    for (i = 0; i < 256; i++)
+        out[i] = depth == 8 ? (uint32_t)i : a4_pack(depth, a4_pal63to255(pal[i].r & 63), a4_pal63to255(pal[i].g & 63), a4_pal63to255(pal[i].b & 63));
+}
+
+/* palette_color: the index in 8-bit, the palette's colours at a truecolour depth */
+void a4_update_palette_color(void)
+{
+    uint32_t e[256];
+    int i;
+    if (!A4S->pub || !palette_color) return;
+    a4_expand_palette(_color_depth, NULL, e);
+    for (i = 0; i < 256; i++) palette_color[i] = (int)e[i];
+}
+
+void set_color_depth(int depth)
+{
+    if (!a4_valid_depth(depth)) return;
+    _color_depth = depth;
+    a4_update_palette_color();
+}
 int get_color_depth(void) { return _color_depth; }
 void set_color_conversion(int mode) { A4S->color_conv = mode; }
 int get_color_conversion(void) { return A4S->color_conv; }
+
+/* ---- blenders (truecolour translucency) -------------------------------------------- */
+
+static void set_blender(int kind, int r, int g, int b, int a)
+{
+    A4S->blend_kind = kind;
+    A4S->blend_r = r & 255; A4S->blend_g = g & 255; A4S->blend_b = b & 255; A4S->blend_a = a & 255;
+}
+void set_trans_blender(int r, int g, int b, int a) { set_blender(A4_BLEND_TRANS, r, g, b, a); }
+void set_alpha_blender(void) { set_blender(A4_BLEND_ALPHA, 0, 0, 0, 255); }
+void set_write_alpha_blender(void) { set_blender(A4_BLEND_WRITE_ALPHA, 0, 0, 0, 255); }
+void set_add_blender(int r, int g, int b, int a) { set_blender(A4_BLEND_ADD, r, g, b, a); }
+void set_burn_blender(int r, int g, int b, int a) { set_blender(A4_BLEND_BURN, r, g, b, a); }
+void set_difference_blender(int r, int g, int b, int a) { set_blender(A4_BLEND_DIFFERENCE, r, g, b, a); }
+void set_dodge_blender(int r, int g, int b, int a) { set_blender(A4_BLEND_DODGE, r, g, b, a); }
+void set_invert_blender(int r, int g, int b, int a) { set_blender(A4_BLEND_INVERT, r, g, b, a); }
+void set_multiply_blender(int r, int g, int b, int a) { set_blender(A4_BLEND_MULTIPLY, r, g, b, a); }
+void set_screen_blender(int r, int g, int b, int a) { set_blender(A4_BLEND_SCREEN, r, g, b, a); }
+
+/* one gun: the blend's own result for x over y */
+static int blend_gun(int kind, int x, int y)
+{
+    switch (kind) {
+    case A4_BLEND_ADD: return x + y > 255 ? 255 : x + y;
+    case A4_BLEND_BURN: return x + y - 255 < 0 ? 0 : x + y - 255;
+    case A4_BLEND_DIFFERENCE: return x > y ? x - y : y - x;
+    case A4_BLEND_DODGE: return x == 255 ? 255 : (y * 255 / (255 - x) > 255 ? 255 : y * 255 / (255 - x));
+    case A4_BLEND_INVERT: return 255 - x;
+    case A4_BLEND_MULTIPLY: return x * y / 255;
+    case A4_BLEND_SCREEN: return 255 - (255 - x) * (255 - y) / 255;
+    default: return x;                                  /* trans */
+    }
+}
+
+/* Allegro's blenders: the blend's result, then n of it over y (n 0-255;
+ * the alpha blender takes n from x's own alpha, a 32-bit colour) */
+uint32_t a4_blend(int depth, uint32_t x, uint32_t y, int n)
+{
+    int xr, xg, xb, yr, yg, yb, kind = A4S->blend_kind;
+    if (kind == A4_BLEND_WRITE_ALPHA) return depth == 32 ? (y & 0xFFFFFF) | ((uint32_t)(n & 255) << 24) : y;
+    if (kind == A4_BLEND_ALPHA) { n = (int)(x >> 24) & 255; x &= 0xFFFFFF; a4_unpack(32, x, &xr, &xg, &xb); }
+    else a4_unpack(depth, x, &xr, &xg, &xb);
+    a4_unpack(depth, y, &yr, &yg, &yb);
+    if (n >= 255) n = 256;
+    xr = blend_gun(kind, xr, yr); xg = blend_gun(kind, xg, yg); xb = blend_gun(kind, xb, yb);
+    return a4_pack(depth, yr + (xr - yr) * n / 256, yg + (xg - yg) * n / 256, yb + (xb - yb) * n / 256);
+}
 
 void create_rgb_table(RGB_MAP *table, const PALETTE pal, void (*callback)(int pos))
 {

@@ -32,6 +32,10 @@ int a4_install(struct a4_public *pub, int system_id)
     A4S->installed = 1;
     A4S->text_bg = 0;
     A4S->digi_volume = A4S->midi_volume = 255;
+    A4S->color_conv = COLORCONV_TOTAL;
+    A4S->blend_kind = A4_BLEND_TRANS;
+    A4S->blend_a = 255;
+    A4S->mixer_quality = 2;
     os_type = OSTYPE_AMIGA;
     if (_color_depth == 0) _color_depth = 8;
     font = a4_builtin_font();

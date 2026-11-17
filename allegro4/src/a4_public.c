@@ -58,6 +58,16 @@ static int a4_palette_color[PAL_SIZE] = {
     A4_PC64(0), A4_PC64(64), A4_PC64(128), A4_PC64(192)
 };
 int *palette_color = a4_palette_color;
+int _rgb_r_shift_15 = 10, _rgb_g_shift_15 = 5, _rgb_b_shift_15 = 0;
+int _rgb_r_shift_16 = 11, _rgb_g_shift_16 = 5, _rgb_b_shift_16 = 0;
+int _rgb_r_shift_24 = 16, _rgb_g_shift_24 = 8, _rgb_b_shift_24 = 0;
+int _rgb_r_shift_32 = 16, _rgb_g_shift_32 = 8, _rgb_b_shift_32 = 0, _rgb_a_shift_32 = 24;
+#define A4_S5(i) (((i) << 3) | ((i) >> 2))
+#define A4_S5x4(i) A4_S5(i), A4_S5(i + 1), A4_S5(i + 2), A4_S5(i + 3)
+int _rgb_scale_5[32] = { A4_S5x4(0), A4_S5x4(4), A4_S5x4(8), A4_S5x4(12), A4_S5x4(16), A4_S5x4(20), A4_S5x4(24), A4_S5x4(28) };
+#define A4_S6(i) (((i) << 2) | ((i) >> 4))
+#define A4_S6x8(i) A4_S6(i), A4_S6(i + 1), A4_S6(i + 2), A4_S6(i + 3), A4_S6(i + 4), A4_S6(i + 5), A4_S6(i + 6), A4_S6(i + 7)
+int _rgb_scale_6[64] = { A4_S6x8(0), A4_S6x8(8), A4_S6x8(16), A4_S6x8(24), A4_S6x8(32), A4_S6x8(40), A4_S6x8(48), A4_S6x8(56) };
 GFX_DRIVER *gfx_driver;
 int gfx_capabilities;
 DIGI_DRIVER *digi_driver;
@@ -129,6 +139,7 @@ int install_allegro(int system_id, int *errno_ptr, int (*atexit_ptr)(void (*)(vo
     pub.color_depth = &_color_depth;
     pub.default_palette = default_palette;
     pub.desktop_palette = desktop_palette;
+    pub.palette_color = palette_color;
     if (a4_install(&pub, system_id) != 0) return -1;
     _a4_default_font = font;
     if (atexit_ptr && !exit_registered) { exit_registered = 1; atexit_ptr(allegro_exit); }

@@ -1,13 +1,31 @@
 /* Copyright (c) 2026 AmiCradle Team. MIT licence (see allegro4/LICENSE).
  * SPDX-License-Identifier: MIT
  *
- * Bitmaps (8-bit, linear, in Fast RAM), clipping and the drawing
- * primitives. The screen is a bitmap like any other; drawing on it marks it
+ * Bitmaps (8, 15, 16, 24 and 32-bit, linear, in Fast RAM), clipping and
+ * the drawing primitives. The screen is a bitmap like any other; drawing on it marks it
  * to be shown (a4_gfx.c).
  */
 #include "a4_internal.h"
 
 /* ---- bitmaps --------------------------------------------------------------- */
+
+/* never written: one per depth, shared by every opener */
+static GFX_VTABLE vtables[5] = {
+    { 8, MASK_COLOR_8 }, { 15, MASK_COLOR_15 }, { 16, MASK_COLOR_16 }, { 24, MASK_COLOR_24 }, { 32, MASK_COLOR_32 },
+};
+
+GFX_VTABLE *a4_vtable(int depth)
+{
+    switch (depth) {
+    case 8: return &vtables[0];
+    case 15: return &vtables[1];
+    case 16: return &vtables[2];
+    case 24: return &vtables[3];
+    case 32: return &vtables[4];
+    default: return NULL;
+    }
+}
+int a4_valid_depth(int depth) { return a4_vtable(depth) != NULL; }
 
 static BITMAP *new_bitmap_struct(int w, int h)
 {
@@ -24,29 +42,34 @@ BITMAP *create_bitmap_ex(int color_depth, int width, int height)
 {
     BITMAP *b;
     unsigned char *pix;
+    GFX_VTABLE *vt = a4_vtable(color_depth);
+    size_t pitch;
     int y;
-    if (width < 0 || height < 0) return NULL;
-    if (color_depth != 8) {
-        /* allegro4.library is 8-bit: any depth gets an 8-bit bitmap, so
-         * a game's own buffers still work; truecolour pixels are not kept. */
-    }
+    if (width < 0 || height < 0 || !vt) return NULL;
     b = new_bitmap_struct(width, height);
     if (!b) return NULL;
-    pix = (unsigned char *)a4_calloc((size_t)(width ? width : 1) * (size_t)(height ? height : 1));
+    /* rows a multiple of 4 bytes, so 16/32-bit pixels are aligned */
+    pitch = ((size_t)(width ? width : 1) * (size_t)a4_bpp(color_depth) + 3) & ~(size_t)3;
+    pix = (unsigned char *)a4_calloc(pitch * (size_t)(height ? height : 1));
     if (!pix) { a4_free(b); return NULL; }
+    b->vtable = vt;
     b->dat = pix;
-    for (y = 0; y < height; y++) b->line[y] = pix + (size_t)y * (size_t)width;
+    for (y = 0; y < height; y++) b->line[y] = pix + (size_t)y * pitch;
+    if (color_depth != 8) {
+        /* a new truecolour bitmap is black, as Allegro's are; the mask is
+         * only where the game draws it */
+    }
     return b;
 }
 
-BITMAP *create_bitmap(int width, int height) { return create_bitmap_ex(8, width, height); }
+BITMAP *create_bitmap(int width, int height) { return create_bitmap_ex(_color_depth ? _color_depth : 8, width, height); }
 BITMAP *create_video_bitmap(int width, int height) { return create_bitmap(width, height); }
 BITMAP *create_system_bitmap(int width, int height) { return create_bitmap(width, height); }
 
 BITMAP *create_sub_bitmap(BITMAP *parent, int x, int y, int width, int height)
 {
     BITMAP *b;
-    int i;
+    int i, bpp;
     if (!parent) return NULL;
     if (x < 0) x = 0;
     if (y < 0) y = 0;
@@ -55,7 +78,9 @@ BITMAP *create_sub_bitmap(BITMAP *parent, int x, int y, int width, int height)
     if (width < 0 || height < 0) return NULL;
     b = new_bitmap_struct(width, height);
     if (!b) return NULL;
-    for (i = 0; i < height; i++) b->line[i] = parent->line[y + i] + x;
+    bpp = a4_bpp(a4_bdepth(parent));
+    for (i = 0; i < height; i++) b->line[i] = parent->line[y + i] + x * bpp;
+    b->vtable = parent->vtable;
     b->id = BMP_ID_SUB | (parent->id & (BMP_ID_VIDEO | BMP_ID_SYSTEM));
     b->extra = parent;              /* for the screen test */
     b->x_ofs = x + parent->x_ofs;
@@ -79,8 +104,59 @@ BITMAP *a4_bitmap_root(BITMAP *bmp)
 
 int a4_is_screen(BITMAP *bmp) { return bmp && A4S->screen_bmp && a4_bitmap_root(bmp) == A4S->screen_bmp; }
 
-int bitmap_color_depth(BITMAP *bmp) { (void)bmp; return 8; }
-int bitmap_mask_color(BITMAP *bmp) { (void)bmp; return MASK_COLOR_8; }
+/* a copy at another depth: 8-bit through the palette, truecolour to 8-bit
+ * by rgb_map or the nearest colour; the mask stays the mask */
+BITMAP *a4_bitmap_to_depth(BITMAP *src, int depth, const RGB *pal)
+{
+    BITMAP *d;
+    int sd, x, y;
+    uint32_t smask, dmask, exp8[256];
+    if (!src) return NULL;
+    sd = a4_bdepth(src);
+    if (sd == depth || !a4_valid_depth(depth)) return src;
+    d = create_bitmap_ex(depth, src->w, src->h);
+    if (!d) return NULL;
+    smask = a4_maskc(sd);
+    dmask = a4_maskc(depth);
+    if (sd == 8) a4_expand_palette(depth, pal, exp8);
+    for (y = 0; y < src->h; y++)
+        for (x = 0; x < src->w; x++) {
+            uint32_t c = a4_rd(src->line[y], x, sd);
+            if (c == smask) c = dmask;
+            else if (sd == 8) c = exp8[c];
+            else {
+                c = a4_convert(c, sd, depth);
+                if (c == dmask && depth != 8) c ^= 1;       /* a real colour that met the mask */
+            }
+            a4_wr(d->line[y], x, depth, c);
+        }
+    return d;
+}
+
+static int depth_index(int d) { return d == 8 ? 0 : d == 15 ? 1 : d == 16 ? 2 : d == 24 ? 3 : 4; }
+
+/* the COLORCONV_ bit for from -> to: four bits per source depth, the others in order */
+static int conv_bit(int from, int to)
+{
+    int f = depth_index(from), t = depth_index(to);
+    return 1 << (f * 4 + (t < f ? t : t - 1));
+}
+
+BITMAP *a4_fixup_loaded(BITMAP *b, const RGB *pal)
+{
+    BITMAP *n;
+    int from, to = _color_depth;
+    if (!b) return NULL;
+    from = a4_bdepth(b);
+    if (from == to || !a4_valid_depth(to) || !(A4S->color_conv & conv_bit(from, to))) return b;
+    n = a4_bitmap_to_depth(b, to, pal);
+    if (!n) return b;
+    destroy_bitmap(b);
+    return n;
+}
+
+int bitmap_color_depth(BITMAP *bmp) { return bmp ? a4_bdepth(bmp) : 0; }
+int bitmap_mask_color(BITMAP *bmp) { return bmp ? (int)a4_maskc(a4_bdepth(bmp)) : 0; }
 int is_same_bitmap(BITMAP *a, BITMAP *b) { return a && b && a4_bitmap_root(a) == a4_bitmap_root(b); }
 int is_linear_bitmap(BITMAP *bmp) { (void)bmp; return TRUE; }
 int is_planar_bitmap(BITMAP *bmp) { (void)bmp; return FALSE; }
@@ -162,39 +238,54 @@ void xor_mode(int on) { drawing_mode(on ? DRAW_MODE_XOR : DRAW_MODE_SOLID, NULL,
 void solid_mode(void) { drawing_mode(DRAW_MODE_SOLID, NULL, 0, 0); }
 
 /* one pixel under the drawing mode, already clipped */
-static inline void plot(BITMAP *b, int x, int y, int c)
+static void plot(BITMAP *b, int x, int y, int c)
 {
-    unsigned char *p = b->line[y] + x;
+    int d = a4_bdepth(b);
+    unsigned char *row = b->line[y];
     switch (A4S->draw_mode) {
     case DRAW_MODE_SOLID:
-        *p = (unsigned char)c;
+        a4_wr(row, x, d, (uint32_t)c);
         break;
     case DRAW_MODE_XOR:
-        *p ^= (unsigned char)c;
+        a4_wr(row, x, d, a4_rd(row, x, d) ^ (uint32_t)c);
         break;
     case DRAW_MODE_TRANS:
-        if (color_map) *p = color_map->data[c & 255][*p];
-        else *p = (unsigned char)c;
+        if (d == 8) row[x] = color_map ? color_map->data[c & 255][row[x]] : (unsigned char)c;
+        else a4_wr(row, x, d, a4_blend(d, (uint32_t)c, a4_rd(row, x, d), A4S->blend_a));
         break;
     default: {
         BITMAP *pat = A4S->pattern;
-        int px, py, pc;
-        if (!pat || pat->w <= 0 || pat->h <= 0) { *p = (unsigned char)c; break; }
+        int px, py, pd;
+        uint32_t pc;
+        if (!pat || pat->w <= 0 || pat->h <= 0) { a4_wr(row, x, d, (uint32_t)c); break; }
         px = (x - A4S->pattern_x) % pat->w; if (px < 0) px += pat->w;
         py = (y - A4S->pattern_y) % pat->h; if (py < 0) py += pat->h;
-        pc = pat->line[py][px];
-        if (A4S->draw_mode == DRAW_MODE_COPY_PATTERN) *p = (unsigned char)pc;
-        else if (A4S->draw_mode == DRAW_MODE_SOLID_PATTERN) *p = pc ? (unsigned char)c : 0;
-        else if (pc) *p = (unsigned char)c;   /* masked pattern */
+        pd = a4_bdepth(pat);
+        pc = a4_rd(pat->line[py], px, pd);
+        if (A4S->draw_mode == DRAW_MODE_COPY_PATTERN) a4_wr(row, x, d, pd == d ? pc : a4_convert(pc, pd, d));
+        else if (A4S->draw_mode == DRAW_MODE_SOLID_PATTERN) a4_wr(row, x, d, pc != a4_maskc(pd) ? (uint32_t)c : a4_maskc(d));
+        else if (pc != a4_maskc(pd)) a4_wr(row, x, d, (uint32_t)c);   /* masked pattern */
         break;
     }
+    }
+}
+
+/* a solid run of one colour */
+static void fill_run(unsigned char *row, int x1, int n, int d, uint32_t c)
+{
+    int i;
+    switch (d) {
+    case 8: memset(row + x1, (int)c, (size_t)n); break;
+    case 15: case 16: { uint16_t *p = (uint16_t *)row + x1; for (i = 0; i < n; i++) p[i] = (uint16_t)c; break; }
+    case 32: { uint32_t *p = (uint32_t *)row + x1; for (i = 0; i < n; i++) p[i] = c; break; }
+    default: for (i = 0; i < n; i++) a4_wr(row, x1 + i, d, c); break;
     }
 }
 
 static void span(BITMAP *b, int x1, int x2, int y, int c)
 {
     if (A4S->draw_mode == DRAW_MODE_SOLID) {
-        memset(b->line[y] + x1, c, (size_t)(x2 - x1 + 1));
+        fill_run(b->line[y], x1, x2 - x1 + 1, a4_bdepth(b), (uint32_t)c);
     } else {
         int x;
         for (x = x1; x <= x2; x++) plot(b, x, y, c);
@@ -205,9 +296,9 @@ static void span(BITMAP *b, int x1, int x2, int y, int c)
 
 void clear_to_color(BITMAP *b, int color)
 {
-    int l, t, r, bt, y;
+    int l, t, r, bt, y, d = a4_bdepth(b);
     clip_box(b, &l, &t, &r, &bt);
-    for (y = t; y < bt; y++) memset(b->line[y] + l, color, (size_t)(r - l));
+    for (y = t; y < bt; y++) fill_run(b->line[y], l, r - l, d, (uint32_t)color);
     a4_mark_screen(b);
 }
 void clear_bitmap(BITMAP *b) { clear_to_color(b, 0); }
@@ -221,13 +312,21 @@ void putpixel(BITMAP *b, int x, int y, int color)
     a4_mark_screen(b);
 }
 void _putpixel(BITMAP *b, int x, int y, int color) { b->line[y][x] = (unsigned char)color; a4_mark_screen(b); }
+void _putpixel15(BITMAP *b, int x, int y, int color) { ((uint16_t *)b->line[y])[x] = (uint16_t)color; a4_mark_screen(b); }
+void _putpixel16(BITMAP *b, int x, int y, int color) { ((uint16_t *)b->line[y])[x] = (uint16_t)color; a4_mark_screen(b); }
+void _putpixel24(BITMAP *b, int x, int y, int color) { a4_wr(b->line[y], x, 24, (uint32_t)color); a4_mark_screen(b); }
+void _putpixel32(BITMAP *b, int x, int y, int color) { ((uint32_t *)b->line[y])[x] = (uint32_t)color; a4_mark_screen(b); }
 
 int getpixel(BITMAP *b, int x, int y)
 {
     if (x < 0 || y < 0 || x >= b->w || y >= b->h) return -1;
-    return b->line[y][x];
+    return (int)a4_rd(b->line[y], x, a4_bdepth(b));
 }
 int _getpixel(BITMAP *b, int x, int y) { return b->line[y][x]; }
+int _getpixel15(BITMAP *b, int x, int y) { return ((uint16_t *)b->line[y])[x]; }
+int _getpixel16(BITMAP *b, int x, int y) { return ((uint16_t *)b->line[y])[x]; }
+int _getpixel24(BITMAP *b, int x, int y) { return (int)a4_rd(b->line[y], x, 24); }
+int _getpixel32(BITMAP *b, int x, int y) { return (int)((uint32_t *)b->line[y])[x]; }
 
 void hline(BITMAP *b, int x1, int y, int x2, int color)
 {
@@ -472,12 +571,13 @@ void triangle(BITMAP *b, int x1, int y1, int x2, int y2, int x3, int y3, int col
 
 void floodfill(BITMAP *b, int x, int y, int color)
 {
-    int l, t, r, bt, target, sp = 0, cap = 1024;
+    int l, t, r, bt, sp = 0, cap = 1024, d = a4_bdepth(b);
+    uint32_t target;
     int *stack;
     clip_box(b, &l, &t, &r, &bt);
     if (x < l || x >= r || y < t || y >= bt) return;
-    target = b->line[y][x];
-    if (target == (color & 255) && A4S->draw_mode == DRAW_MODE_SOLID) return;
+    target = a4_rd(b->line[y], x, d);
+    if (target == (d == 8 ? (uint32_t)(color & 255) : (uint32_t)color) && A4S->draw_mode == DRAW_MODE_SOLID) return;
     stack = (int *)a4_malloc(sizeof(int) * 2 * (size_t)cap);
     if (!stack) return;
     {
@@ -487,15 +587,15 @@ void floodfill(BITMAP *b, int x, int y, int color)
         stack[sp++] = x; stack[sp++] = y;
         while (sp) {
             int cy = stack[--sp], cx = stack[--sp], x1, x2, i;
-            if (done[(cy - t) * (r - l) + (cx - l)] || b->line[cy][cx] != target) continue;
-            x1 = cx; while (x1 > l && b->line[cy][x1 - 1] == target && !done[(cy - t) * (r - l) + (x1 - 1 - l)]) x1--;
-            x2 = cx; while (x2 < r - 1 && b->line[cy][x2 + 1] == target && !done[(cy - t) * (r - l) + (x2 + 1 - l)]) x2++;
+            if (done[(cy - t) * (r - l) + (cx - l)] || a4_rd(b->line[cy], cx, d) != target) continue;
+            x1 = cx; while (x1 > l && a4_rd(b->line[cy], x1 - 1, d) == target && !done[(cy - t) * (r - l) + (x1 - 1 - l)]) x1--;
+            x2 = cx; while (x2 < r - 1 && a4_rd(b->line[cy], x2 + 1, d) == target && !done[(cy - t) * (r - l) + (x2 + 1 - l)]) x2++;
             for (i = x1; i <= x2; i++) done[(cy - t) * (r - l) + (i - l)] = 1;
             for (i = x1; i <= x2; i++) {
                 int ny;
                 for (ny = cy - 1; ny <= cy + 1; ny += 2) {
                     if (ny < t || ny >= bt) continue;
-                    if (b->line[ny][i] == target && !done[(ny - t) * (r - l) + (i - l)]) {
+                    if (a4_rd(b->line[ny], i, d) == target && !done[(ny - t) * (r - l) + (i - l)]) {
                         if (sp + 2 > cap * 2) {
                             int *ns = (int *)a4_realloc(stack, sizeof(int) * 2 * (size_t)cap, sizeof(int) * 4 * (size_t)cap);
                             if (!ns) goto out;

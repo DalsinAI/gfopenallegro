@@ -3118,6 +3118,363 @@ static char ** L_get_config_argv(REG(a0, const char * section), REG(a1, const ch
     return _r;
 }
 
+static int L__getpixel15(REG(a0, BITMAP * bmp), REG(d0, int x), REG(d1, int y), REG(a6, struct A4Base *_lb))
+{
+    int _r;
+    ENTER(_lb);
+    _r = _getpixel15(bmp, x, y);
+    LEAVE();
+    return _r;
+}
+
+static int L__getpixel16(REG(a0, BITMAP * bmp), REG(d0, int x), REG(d1, int y), REG(a6, struct A4Base *_lb))
+{
+    int _r;
+    ENTER(_lb);
+    _r = _getpixel16(bmp, x, y);
+    LEAVE();
+    return _r;
+}
+
+static int L__getpixel24(REG(a0, BITMAP * bmp), REG(d0, int x), REG(d1, int y), REG(a6, struct A4Base *_lb))
+{
+    int _r;
+    ENTER(_lb);
+    _r = _getpixel24(bmp, x, y);
+    LEAVE();
+    return _r;
+}
+
+static int L__getpixel32(REG(a0, BITMAP * bmp), REG(d0, int x), REG(d1, int y), REG(a6, struct A4Base *_lb))
+{
+    int _r;
+    ENTER(_lb);
+    _r = _getpixel32(bmp, x, y);
+    LEAVE();
+    return _r;
+}
+
+static void L__putpixel15(REG(a0, BITMAP * bmp), REG(d0, int x), REG(d1, int y), REG(d2, int color), REG(a6, struct A4Base *_lb))
+{
+    ENTER(_lb);
+    _putpixel15(bmp, x, y, color);
+    LEAVE();
+}
+
+static void L__putpixel16(REG(a0, BITMAP * bmp), REG(d0, int x), REG(d1, int y), REG(d2, int color), REG(a6, struct A4Base *_lb))
+{
+    ENTER(_lb);
+    _putpixel16(bmp, x, y, color);
+    LEAVE();
+}
+
+static void L__putpixel24(REG(a0, BITMAP * bmp), REG(d0, int x), REG(d1, int y), REG(d2, int color), REG(a6, struct A4Base *_lb))
+{
+    ENTER(_lb);
+    _putpixel24(bmp, x, y, color);
+    LEAVE();
+}
+
+static void L__putpixel32(REG(a0, BITMAP * bmp), REG(d0, int x), REG(d1, int y), REG(d2, int color), REG(a6, struct A4Base *_lb))
+{
+    ENTER(_lb);
+    _putpixel32(bmp, x, y, color);
+    LEAVE();
+}
+
+static int L_get_mixer_bits(REG(a6, struct A4Base *_lb))
+{
+    int _r;
+    ENTER(_lb);
+    _r = get_mixer_bits();
+    LEAVE();
+    return _r;
+}
+
+static int L_get_mixer_channels(REG(a6, struct A4Base *_lb))
+{
+    int _r;
+    ENTER(_lb);
+    _r = get_mixer_channels();
+    LEAVE();
+    return _r;
+}
+
+static int L_get_mixer_frequency(REG(a6, struct A4Base *_lb))
+{
+    int _r;
+    ENTER(_lb);
+    _r = get_mixer_frequency();
+    LEAVE();
+    return _r;
+}
+
+static int L_get_mixer_quality(REG(a6, struct A4Base *_lb))
+{
+    int _r;
+    ENTER(_lb);
+    _r = get_mixer_quality();
+    LEAVE();
+    return _r;
+}
+
+static int L_get_mixer_voices(REG(a6, struct A4Base *_lb))
+{
+    int _r;
+    ENTER(_lb);
+    _r = get_mixer_voices();
+    LEAVE();
+    return _r;
+}
+
+static int L_geta32(REG(d0, int c), REG(a6, struct A4Base *_lb))
+{
+    int _r;
+    ENTER(_lb);
+    _r = geta32(c);
+    LEAVE();
+    return _r;
+}
+
+static int L_geta_depth(REG(d0, int color_depth), REG(d1, int c), REG(a6, struct A4Base *_lb))
+{
+    int _r;
+    ENTER(_lb);
+    _r = geta_depth(color_depth, c);
+    LEAVE();
+    return _r;
+}
+
+static int L_getb15(REG(d0, int c), REG(a6, struct A4Base *_lb))
+{
+    int _r;
+    ENTER(_lb);
+    _r = getb15(c);
+    LEAVE();
+    return _r;
+}
+
+static int L_getb16(REG(d0, int c), REG(a6, struct A4Base *_lb))
+{
+    int _r;
+    ENTER(_lb);
+    _r = getb16(c);
+    LEAVE();
+    return _r;
+}
+
+static int L_getb24(REG(d0, int c), REG(a6, struct A4Base *_lb))
+{
+    int _r;
+    ENTER(_lb);
+    _r = getb24(c);
+    LEAVE();
+    return _r;
+}
+
+static int L_getb32(REG(d0, int c), REG(a6, struct A4Base *_lb))
+{
+    int _r;
+    ENTER(_lb);
+    _r = getb32(c);
+    LEAVE();
+    return _r;
+}
+
+static int L_getg15(REG(d0, int c), REG(a6, struct A4Base *_lb))
+{
+    int _r;
+    ENTER(_lb);
+    _r = getg15(c);
+    LEAVE();
+    return _r;
+}
+
+static int L_getg16(REG(d0, int c), REG(a6, struct A4Base *_lb))
+{
+    int _r;
+    ENTER(_lb);
+    _r = getg16(c);
+    LEAVE();
+    return _r;
+}
+
+static int L_getg24(REG(d0, int c), REG(a6, struct A4Base *_lb))
+{
+    int _r;
+    ENTER(_lb);
+    _r = getg24(c);
+    LEAVE();
+    return _r;
+}
+
+static int L_getg32(REG(d0, int c), REG(a6, struct A4Base *_lb))
+{
+    int _r;
+    ENTER(_lb);
+    _r = getg32(c);
+    LEAVE();
+    return _r;
+}
+
+static int L_getr15(REG(d0, int c), REG(a6, struct A4Base *_lb))
+{
+    int _r;
+    ENTER(_lb);
+    _r = getr15(c);
+    LEAVE();
+    return _r;
+}
+
+static int L_getr16(REG(d0, int c), REG(a6, struct A4Base *_lb))
+{
+    int _r;
+    ENTER(_lb);
+    _r = getr16(c);
+    LEAVE();
+    return _r;
+}
+
+static int L_getr24(REG(d0, int c), REG(a6, struct A4Base *_lb))
+{
+    int _r;
+    ENTER(_lb);
+    _r = getr24(c);
+    LEAVE();
+    return _r;
+}
+
+static int L_getr32(REG(d0, int c), REG(a6, struct A4Base *_lb))
+{
+    int _r;
+    ENTER(_lb);
+    _r = getr32(c);
+    LEAVE();
+    return _r;
+}
+
+static int L_makeacol32(REG(d0, int r), REG(d1, int g), REG(d2, int b), REG(d3, int a), REG(a6, struct A4Base *_lb))
+{
+    int _r;
+    ENTER(_lb);
+    _r = makeacol32(r, g, b, a);
+    LEAVE();
+    return _r;
+}
+
+static int L_makecol15(REG(d0, int r), REG(d1, int g), REG(d2, int b), REG(a6, struct A4Base *_lb))
+{
+    int _r;
+    ENTER(_lb);
+    _r = makecol15(r, g, b);
+    LEAVE();
+    return _r;
+}
+
+static int L_makecol16(REG(d0, int r), REG(d1, int g), REG(d2, int b), REG(a6, struct A4Base *_lb))
+{
+    int _r;
+    ENTER(_lb);
+    _r = makecol16(r, g, b);
+    LEAVE();
+    return _r;
+}
+
+static int L_makecol24(REG(d0, int r), REG(d1, int g), REG(d2, int b), REG(a6, struct A4Base *_lb))
+{
+    int _r;
+    ENTER(_lb);
+    _r = makecol24(r, g, b);
+    LEAVE();
+    return _r;
+}
+
+static int L_makecol32(REG(d0, int r), REG(d1, int g), REG(d2, int b), REG(a6, struct A4Base *_lb))
+{
+    int _r;
+    ENTER(_lb);
+    _r = makecol32(r, g, b);
+    LEAVE();
+    return _r;
+}
+
+static void L_set_add_blender(REG(d0, int r), REG(d1, int g), REG(d2, int b), REG(d3, int a), REG(a6, struct A4Base *_lb))
+{
+    ENTER(_lb);
+    set_add_blender(r, g, b, a);
+    LEAVE();
+}
+
+static void L_set_alpha_blender(REG(a6, struct A4Base *_lb))
+{
+    ENTER(_lb);
+    set_alpha_blender();
+    LEAVE();
+}
+
+static void L_set_burn_blender(REG(d0, int r), REG(d1, int g), REG(d2, int b), REG(d3, int a), REG(a6, struct A4Base *_lb))
+{
+    ENTER(_lb);
+    set_burn_blender(r, g, b, a);
+    LEAVE();
+}
+
+static void L_set_difference_blender(REG(d0, int r), REG(d1, int g), REG(d2, int b), REG(d3, int a), REG(a6, struct A4Base *_lb))
+{
+    ENTER(_lb);
+    set_difference_blender(r, g, b, a);
+    LEAVE();
+}
+
+static void L_set_dodge_blender(REG(d0, int r), REG(d1, int g), REG(d2, int b), REG(d3, int a), REG(a6, struct A4Base *_lb))
+{
+    ENTER(_lb);
+    set_dodge_blender(r, g, b, a);
+    LEAVE();
+}
+
+static void L_set_invert_blender(REG(d0, int r), REG(d1, int g), REG(d2, int b), REG(d3, int a), REG(a6, struct A4Base *_lb))
+{
+    ENTER(_lb);
+    set_invert_blender(r, g, b, a);
+    LEAVE();
+}
+
+static void L_set_mixer_quality(REG(d0, int quality), REG(a6, struct A4Base *_lb))
+{
+    ENTER(_lb);
+    set_mixer_quality(quality);
+    LEAVE();
+}
+
+static void L_set_multiply_blender(REG(d0, int r), REG(d1, int g), REG(d2, int b), REG(d3, int a), REG(a6, struct A4Base *_lb))
+{
+    ENTER(_lb);
+    set_multiply_blender(r, g, b, a);
+    LEAVE();
+}
+
+static void L_set_screen_blender(REG(d0, int r), REG(d1, int g), REG(d2, int b), REG(d3, int a), REG(a6, struct A4Base *_lb))
+{
+    ENTER(_lb);
+    set_screen_blender(r, g, b, a);
+    LEAVE();
+}
+
+static void L_set_trans_blender(REG(d0, int r), REG(d1, int g), REG(d2, int b), REG(d3, int a), REG(a6, struct A4Base *_lb))
+{
+    ENTER(_lb);
+    set_trans_blender(r, g, b, a);
+    LEAVE();
+}
+
+static void L_set_write_alpha_blender(REG(a6, struct A4Base *_lb))
+{
+    ENTER(_lb);
+    set_write_alpha_blender();
+    LEAVE();
+}
+
 static const APTR a4_vectors[] = {
     (APTR)lib_open, (APTR)lib_close, (APTR)lib_expunge, (APTR)lib_null,
     (APTR)L__getpixel,
@@ -3506,5 +3863,48 @@ static const APTR a4_vectors[] = {
     (APTR)L_set_config_hex,
     (APTR)L_set_config_id,
     (APTR)L_get_config_argv,
+    (APTR)L__getpixel15,
+    (APTR)L__getpixel16,
+    (APTR)L__getpixel24,
+    (APTR)L__getpixel32,
+    (APTR)L__putpixel15,
+    (APTR)L__putpixel16,
+    (APTR)L__putpixel24,
+    (APTR)L__putpixel32,
+    (APTR)L_get_mixer_bits,
+    (APTR)L_get_mixer_channels,
+    (APTR)L_get_mixer_frequency,
+    (APTR)L_get_mixer_quality,
+    (APTR)L_get_mixer_voices,
+    (APTR)L_geta32,
+    (APTR)L_geta_depth,
+    (APTR)L_getb15,
+    (APTR)L_getb16,
+    (APTR)L_getb24,
+    (APTR)L_getb32,
+    (APTR)L_getg15,
+    (APTR)L_getg16,
+    (APTR)L_getg24,
+    (APTR)L_getg32,
+    (APTR)L_getr15,
+    (APTR)L_getr16,
+    (APTR)L_getr24,
+    (APTR)L_getr32,
+    (APTR)L_makeacol32,
+    (APTR)L_makecol15,
+    (APTR)L_makecol16,
+    (APTR)L_makecol24,
+    (APTR)L_makecol32,
+    (APTR)L_set_add_blender,
+    (APTR)L_set_alpha_blender,
+    (APTR)L_set_burn_blender,
+    (APTR)L_set_difference_blender,
+    (APTR)L_set_dodge_blender,
+    (APTR)L_set_invert_blender,
+    (APTR)L_set_mixer_quality,
+    (APTR)L_set_multiply_blender,
+    (APTR)L_set_screen_blender,
+    (APTR)L_set_trans_blender,
+    (APTR)L_set_write_alpha_blender,
     (APTR)-1,
 };

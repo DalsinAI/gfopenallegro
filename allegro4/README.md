@@ -36,15 +36,24 @@ animations (`open_fli`, `open_memory_fli`, `next_fli_frame`, `play_fli`);
 Allegro's internal header gives (`gui_shadow_box_proc`, `gui_mouse_focus`,
 `_default_font`...).
 
-Limits: 8-bit colour only. MIDI loads but plays silent; samples are mixed,
-but stay silent until acgame.library has audio. Games written for Unix paths
+Colour depths 8, 15, 16, 24 and 32: truecolour bitmaps, `makecol`/`getr` for
+every depth, the truecolour blenders (`set_trans_blender`, `set_alpha_blender`,
+`set_add_blender`, `set_multiply_blender` and the rest), `set_color_conversion`
+and loading images at the screen's depth. A truecolour screen is shown on
+ACGame's 8-bit screen through a 6x7x6 colour cube; `desktop_color_depth()`
+stays 8. Config files (`set_config_file`, `get_config_*`, `set_config_*`,
+`push_config_state`/`pop_config_state`, override files) are read and written.
+
+Limits: MIDI loads but plays silent; samples are mixed and pushed to
+acgame.library, which plays them from acgame.library 1.3. Games written for Unix paths
 work: "./data" and "../save" become "data" and "/save".
 
 ## Building
 
-    tests/run_tests.sh     host unit tests (497 checks; SANITIZE="-fsanitize=address,undefined")
+    tests/run_tests.sh     host unit tests (635 checks; SANITIZE="-fsanitize=address,undefined")
     build-amiga.sh         allegro4.library, liballeg.a, tests/A4LibSmoke (STOVE=, OUT=)
     tools/gen_lib.py       the library's calls from include/allegro.h
+    package.sh OUT DEST VERSION   the GFOpenUp part (Parts/Allegro4) and the SDK
 
 `library/calls.txt` fixes the order of the library's calls. New calls only go
 at its end, so a game built against an older library runs on a later one.

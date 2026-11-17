@@ -24,23 +24,25 @@ static void *read_block(PACKFILE *f, long size)
 /* a bitmap of 'bits' (negative: with alpha) from a datafile or font */
 BITMAP *a4_read_bitmap(PACKFILE *f, int bits)
 {
-    int w, h, x, y, rgba = 0;
+    int w, h, x, y, rgba = 0, depth;
     BITMAP *b;
-    RGB pal[256];
     if (bits < 0) { bits = -bits; rgba = 1; }
     w = pack_mgetw(f);
     h = pack_mgetw(f);
     if (w < 0 || h < 0) return NULL;
-    b = create_bitmap(w, h);
-    if (!b) return NULL;
     if (bits == 8) {
+        b = create_bitmap_ex(8, w, h);
+        if (!b) return NULL;
         for (y = 0; y < h; y++) pack_fread(b->line[y], w, f);
-        return b;
+        return a4_fixup_loaded(b, NULL);
     }
-    get_palette(pal);
+    /* truecolour data: read at its own depth (4-bit grey as 24), then to the game's */
+    depth = bits == 15 || bits == 16 ? 16 : bits == 32 || rgba ? 32 : 24;
+    b = create_bitmap_ex(depth, w, h);
+    if (!b) return NULL;
     for (y = 0; y < h; y++) {
         for (x = 0; x < w; x++) {
-            int r, g, bl, c;
+            int r, g, bl, a = 255, c;
             if (bits == 15 || bits == 16) {
                 c = pack_igetw(f);          /* stored as 5-6-5 */
                 r = ((c >> 11) & 31) * 255 / 31;
@@ -53,15 +55,18 @@ BITMAP *a4_read_bitmap(PACKFILE *f, int bits)
                 r = pack_getc(f);
                 g = pack_getc(f);
                 bl = pack_getc(f);
-                if (rgba || bits == 32) { if (rgba) pack_getc(f); }
+                if (rgba) a = pack_getc(f);
             }
             /* pink (255,0,255) is the mask in truecolour data */
-            if (r == 255 && g == 0 && bl == 255) b->line[y][x] = 0;
-            else b->line[y][x] = (unsigned char)(rgb_map ? rgb_map->data[r >> 3][g >> 3][bl >> 3]
-                                                          : bestfit_color(pal, r >> 2, g >> 2, bl >> 2));
+            if (r == 255 && g == 0 && bl == 255) a4_wr(b->line[y], x, depth, a4_maskc(depth));
+            else {
+                uint32_t col = rgba ? (uint32_t)makeacol32(r, g, bl, a) : a4_pack(depth, r, g, bl);
+                if (col == a4_maskc(depth)) col ^= 1;
+                a4_wr(b->line[y], x, depth, col);
+            }
         }
     }
-    return b;
+    return a4_fixup_loaded(b, NULL);
 }
 
 static RLE_SPRITE *read_rle(PACKFILE *f)

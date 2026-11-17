@@ -255,11 +255,6 @@ void create_trans_table(COLOR_MAP *table, const PALETTE pal, int r, int g, int b
 void create_color_table(COLOR_MAP *table, const PALETTE pal,
                         void (*blend)(const PALETTE pal, int x, int y, RGB *rgb), void (*callback)(int pos));
 void create_blender_table(COLOR_MAP *table, const PALETTE pal, void (*callback)(int pos));
-/* the truecolour blenders: 8-bit drawing uses color_map, so these only keep the call */
-static inline void set_trans_blender(int r, int g, int b, int a) { (void)r; (void)g; (void)b; (void)a; }
-static inline void set_alpha_blender(void) { }
-static inline void set_add_blender(int r, int g, int b, int a) { (void)r; (void)g; (void)b; (void)a; }
-static inline void set_multiply_blender(int r, int g, int b, int a) { (void)r; (void)g; (void)b; (void)a; }
 void hsv_to_rgb(float h, float s, float v, int *r, int *g, int *b);
 void rgb_to_hsv(int r, int g, int b, float *h, float *s, float *v);
 int bestfit_color(const PALETTE pal, int r, int g, int b);
@@ -275,6 +270,25 @@ int geta(int c);
 int getr8(int c);
 int getg8(int c);
 int getb8(int c);
+int makecol15(int r, int g, int b);
+int makecol16(int r, int g, int b);
+int makecol24(int r, int g, int b);
+int makecol32(int r, int g, int b);
+int makeacol32(int r, int g, int b, int a);
+int getr15(int c);
+int getg15(int c);
+int getb15(int c);
+int getr16(int c);
+int getg16(int c);
+int getb16(int c);
+int getr24(int c);
+int getg24(int c);
+int getb24(int c);
+int getr32(int c);
+int getg32(int c);
+int getb32(int c);
+int geta32(int c);
+int geta_depth(int color_depth, int c);
 int getr_depth(int color_depth, int c);
 int getg_depth(int color_depth, int c);
 int getb_depth(int color_depth, int c);
@@ -290,6 +304,18 @@ int get_color_conversion(void);
 #define COLORCONV_8_TO_24 0x4
 #define COLORCONV_8_TO_32 0x8
 #define COLORCONV_15_TO_8 0x10
+#define COLORCONV_15_TO_16 0x20
+#define COLORCONV_15_TO_24 0x40
+#define COLORCONV_15_TO_32 0x80
+#define COLORCONV_16_TO_15 0x200
+#define COLORCONV_16_TO_24 0x400
+#define COLORCONV_16_TO_32 0x800
+#define COLORCONV_24_TO_15 0x2000
+#define COLORCONV_24_TO_16 0x4000
+#define COLORCONV_24_TO_32 0x8000
+#define COLORCONV_32_TO_15 0x20000
+#define COLORCONV_32_TO_16 0x40000
+#define COLORCONV_32_TO_24 0x80000
 #define COLORCONV_16_TO_8 0x100
 #define COLORCONV_24_TO_8 0x1000
 #define COLORCONV_32_TO_8 0x10000
@@ -297,6 +323,15 @@ int get_color_conversion(void);
 #define COLORCONV_EXPAND_256 (COLORCONV_8_TO_15 | COLORCONV_8_TO_16 | COLORCONV_8_TO_24 | COLORCONV_8_TO_32)
 #define COLORCONV_REDUCE_TO_256 (COLORCONV_15_TO_8 | COLORCONV_16_TO_8 | COLORCONV_24_TO_8 | COLORCONV_32_TO_8 | COLORCONV_32A_TO_8)
 #define COLORCONV_DITHER 0x6000000
+/* the pixel formats (Allegro 4's own on a PC): 15 = 0RRRRRGGGGGBBBBB,
+ * 16 = RRRRRGGGGGGBBBBB, 24 and 32 = 0xAARRGGBB; a 24-bit pixel is three
+ * bytes R, G, B in memory, a 15/16/32-bit one a native word */
+#define A4_HAS_TRUECOLOUR 1
+extern int _rgb_r_shift_15, _rgb_g_shift_15, _rgb_b_shift_15;
+extern int _rgb_r_shift_16, _rgb_g_shift_16, _rgb_b_shift_16;
+extern int _rgb_r_shift_24, _rgb_g_shift_24, _rgb_b_shift_24;
+extern int _rgb_r_shift_32, _rgb_g_shift_32, _rgb_b_shift_32, _rgb_a_shift_32;
+extern int _rgb_scale_5[32], _rgb_scale_6[64];
 #define MASK_COLOR_8 0
 #define MASK_COLOR_15 0x7C1F
 #define MASK_COLOR_16 0xF81F
@@ -305,7 +340,10 @@ int get_color_conversion(void);
 
 /* ---- bitmaps ---------------------------------------------------------------- */
 
-struct GFX_VTABLE;
+typedef struct GFX_VTABLE {
+    int color_depth;                /* 8, 15, 16, 24 or 32 */
+    int mask_color;
+} GFX_VTABLE;
 typedef struct BITMAP {
     int w, h;                       /* width and height in pixels */
     int clip;                       /* clipping on */
@@ -429,6 +467,19 @@ void a4_flush_screen(void);
 void drawing_mode(int mode, BITMAP *pattern, int x_anchor, int y_anchor);
 void xor_mode(int on);
 void solid_mode(void);
+/* truecolour translucency (DRAW_MODE_TRANS, draw_trans_sprite, draw_lit_sprite):
+ * the blender and its colour/alpha; 8-bit uses color_map instead */
+typedef unsigned long (*BLENDER_FUNC)(unsigned long x, unsigned long y, unsigned long n);
+void set_trans_blender(int r, int g, int b, int a);
+void set_alpha_blender(void);
+void set_write_alpha_blender(void);
+void set_add_blender(int r, int g, int b, int a);
+void set_burn_blender(int r, int g, int b, int a);
+void set_difference_blender(int r, int g, int b, int a);
+void set_dodge_blender(int r, int g, int b, int a);
+void set_invert_blender(int r, int g, int b, int a);
+void set_multiply_blender(int r, int g, int b, int a);
+void set_screen_blender(int r, int g, int b, int a);
 
 void clear_bitmap(BITMAP *bitmap);
 void clear_to_color(BITMAP *bitmap, int color);
@@ -441,6 +492,14 @@ void putpixel(BITMAP *bmp, int x, int y, int color);
 void _putpixel(BITMAP *bmp, int x, int y, int color);
 int getpixel(BITMAP *bmp, int x, int y);
 int _getpixel(BITMAP *bmp, int x, int y);
+void _putpixel15(BITMAP *bmp, int x, int y, int color);
+void _putpixel16(BITMAP *bmp, int x, int y, int color);
+void _putpixel24(BITMAP *bmp, int x, int y, int color);
+void _putpixel32(BITMAP *bmp, int x, int y, int color);
+int _getpixel15(BITMAP *bmp, int x, int y);
+int _getpixel16(BITMAP *bmp, int x, int y);
+int _getpixel24(BITMAP *bmp, int x, int y);
+int _getpixel32(BITMAP *bmp, int x, int y);
 #define putpixel8 _putpixel
 #define getpixel8 _getpixel
 #define _putpixel8 _putpixel
@@ -989,6 +1048,12 @@ int detect_midi_driver(int driver_id);
 void reserve_voices(int digi_voices, int midi_voices);
 void set_volume_per_voice(int scale);
 int install_sound(int digi, int midi, const char *cfg_path);
+int get_mixer_quality(void);
+void set_mixer_quality(int quality);
+int get_mixer_voices(void);
+int get_mixer_frequency(void);
+int get_mixer_bits(void);
+int get_mixer_channels(void);
 void remove_sound(void);
 void set_volume(int digi_volume, int midi_volume);
 void get_volume(int *digi_volume, int *midi_volume);
