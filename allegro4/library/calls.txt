@@ -428,3 +428,6 @@ set_multiply_blender
 set_screen_blender
 set_trans_blender
 set_write_alpha_blender
+is_windowed_mode
+load_bitmap_font
+make_trans_font

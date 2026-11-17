@@ -44,13 +44,21 @@ ACGame's 8-bit screen through a 6x7x6 colour cube; `desktop_color_depth()`
 stays 8. Config files (`set_config_file`, `get_config_*`, `set_config_*`,
 `push_config_state`/`pop_config_state`, override files) are read and written.
 
+Module music through DUMB's Allegro layer (`aldumb.h`: `dumb_load_mod_quick`,
+`al_start_duh`, `al_poll_duh`, `al_pause_duh`...) plays through
+gfopenmusic.library (MOD, S3M, XM, IT via gfopenmodule.datatype, to AHI),
+looping as DUMB does; without that library the players run silent.
+Allegro 4's old names (`PALLETE`, `get_pallete`...), `bmp_read*`/`bmp_write*`
+at every depth, `load_bitmap_font` and the DOS driver ids (`GFX_VGA`,
+`GFX_MODEX`...) are there.
+
 Limits: MIDI loads but plays silent; samples are mixed and pushed to
 acgame.library, which plays them from acgame.library 1.3. Games written for Unix paths
 work: "./data" and "../save" become "data" and "/save".
 
 ## Building
 
-    tests/run_tests.sh     host unit tests (635 checks; SANITIZE="-fsanitize=address,undefined")
+    tests/run_tests.sh     host unit tests (673 checks; SANITIZE="-fsanitize=address,undefined")
     build-amiga.sh         allegro4.library, liballeg.a, tests/A4LibSmoke (STOVE=, OUT=)
     tools/gen_lib.py       the library's calls from include/allegro.h
     package.sh OUT DEST VERSION   the GFOpenUp part (Parts/Allegro4) and the SDK

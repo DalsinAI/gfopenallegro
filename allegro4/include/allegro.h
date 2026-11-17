@@ -414,6 +414,16 @@ void bmp_unwrite_line(BITMAP *bmp);
 #define bmp_select(bmp)
 #define bmp_write8(addr, c)  (*((uint8_t *)(addr)) = (c))
 #define bmp_read8(addr)      (*((uint8_t *)(addr)))
+#define bmp_write15(addr, c) (*((uint16_t *)(addr)) = (uint16_t)(c))
+#define bmp_write16(addr, c) (*((uint16_t *)(addr)) = (uint16_t)(c))
+#define bmp_write32(addr, c) (*((uint32_t *)(addr)) = (uint32_t)(c))
+#define bmp_read15(addr)     (*((uint16_t *)(addr)))
+#define bmp_read16(addr)     (*((uint16_t *)(addr)))
+#define bmp_read32(addr)     (*((uint32_t *)(addr)))
+/* 24-bit pixels are three bytes R, G, B (0xRRGGBB) */
+#define bmp_write24(addr, c) do { uint8_t *_p24 = (uint8_t *)(addr); int _c24 = (int)(c); \
+                                  _p24[0] = (uint8_t)(_c24 >> 16); _p24[1] = (uint8_t)(_c24 >> 8); _p24[2] = (uint8_t)_c24; } while (0)
+#define bmp_read24(addr)     ((((const uint8_t *)(addr))[0] << 16) | (((const uint8_t *)(addr))[1] << 8) | ((const uint8_t *)(addr))[2])
 
 /* ---- graphics modes ------------------------------------------------------------ */
 
@@ -425,6 +435,15 @@ void bmp_unwrite_line(BITMAP *bmp);
 #define GFX_ACGAME              AL_ID('A','C','G','M')
 #define GFX_ACGAME_AGA          AL_ID('A','C','G','A')
 #define GFX_ACGAME_RTG          AL_ID('A','C','G','R')
+/* the DOS drivers' ids: a game that asks for one gets ACGame's own screen */
+#define GFX_VGA                 AL_ID('V','G','A',' ')
+#define GFX_MODEX               AL_ID('M','O','D','X')
+#define GFX_VESA1               AL_ID('V','B','E','1')
+#define GFX_VESA2B              AL_ID('V','B','B','N')
+#define GFX_VESA2L              AL_ID('V','B','F','L')
+#define GFX_VESA3               AL_ID('V','B','E','3')
+#define GFX_VBEAF               AL_ID('V','B','A','F')
+#define GFX_XTENDED             AL_ID('X','T','N','D')
 
 typedef struct GFX_DRIVER {
     int id;
@@ -450,6 +469,7 @@ int get_refresh_rate(void);
 int get_gfx_mode(void);
 int get_gfx_mode_type(int graphics_card);
 GFX_MODE_LIST *get_gfx_mode_list(int card);
+int is_windowed_mode(void);            /* 0: ACGame's screens are full screens */
 void destroy_gfx_mode_list(GFX_MODE_LIST *gfx_mode_list);
 void vsync(void);
 /* allegro4.library: show the screen bitmap now (it is shown at vsync(),
@@ -995,6 +1015,10 @@ FONT *load_font(const char *filename, RGB *pal, void *param);
 FONT *load_dat_font(const char *filename, RGB *pal, void *param);
 /* glyphs in boxes of the border colour (the top-left pixel), from ' ' on */
 FONT *grab_font_from_bitmap(BITMAP *bmp);
+/* a font from a picture of a glyph grid (PCX, BMP): grab_font_from_bitmap's rules */
+FONT *load_bitmap_font(const char *filename, RGB *pal, void *param);
+/* kept: a colour font draws with its mask colour clear at every depth */
+void make_trans_font(FONT *f);
 
 /* ---- sound ------------------------------------------------------------------------------- */
 
@@ -1108,6 +1132,24 @@ int alert3(const char *s1, const char *s2, const char *s3, const char *b1, const
 
 #ifdef __cplusplus
 }
+#endif
+
+/* the old 'pallete' names (Allegro 4's alcompat.h) */
+#ifndef ALLEGRO_NO_COMPATIBILITY
+#define PALLETE                     PALETTE
+#define black_pallete               black_palette
+#define desktop_pallete             desktop_palette
+#define set_pallete                 set_palette
+#define get_pallete                 get_palette
+#define set_pallete_range           set_palette_range
+#define get_pallete_range           get_palette_range
+#define fli_pallete                 fli_palette
+#define pallete_color               palette_color
+#define DAT_PALLETE                 DAT_PALETTE
+#define select_pallete              select_palette
+#define unselect_pallete            unselect_palette
+#define generate_332_pallete        generate_332_palette
+#define generate_optimised_pallete  generate_optimized_palette
 #endif
 
 /* the dialog engine: game-side, in liballeg.a (not library calls) */

@@ -1,0 +1,2 @@
+gfopenmusic.library's headers (DalsinAI/gfopenmusic include/, PR #1 at de993d6),
+copied so allegro4's aldumb layer builds on any stove. Update them from that repo.

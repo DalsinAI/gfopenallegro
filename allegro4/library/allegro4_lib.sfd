@@ -436,4 +436,7 @@ void set_multiply_blender(int r, int g, int b, int a)(d0,d1,d2,d3)
 void set_screen_blender(int r, int g, int b, int a)(d0,d1,d2,d3)
 void set_trans_blender(int r, int g, int b, int a)(d0,d1,d2,d3)
 void set_write_alpha_blender()()
+int is_windowed_mode()()
+FONT * load_bitmap_font(const char * filename, RGB * pal, void * param)(a0,a1,a2)
+void make_trans_font(FONT * f)(a0)
 ==end

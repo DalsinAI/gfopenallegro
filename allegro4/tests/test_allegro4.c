@@ -6,6 +6,8 @@
  */
 #include <allegro.h>
 #include "fake_acgame.h"
+#include "fake_music.h"
+#include <aldumb.h>
 #include <stdio.h>
 #include <unistd.h>
 
@@ -1649,6 +1651,112 @@ static int make_fli(void)
     return fl_n;
 }
 
+/* Open Invaders: aldumb's players over the music library; the old names,
+ * bmp_read/write at every depth, load_bitmap_font, the DOS driver ids */
+static void test_aldumb(void)
+{
+    char path[400], unixname[420];
+    FILE *fp;
+    DUH *duh;
+    AL_DUH_PLAYER *dp;
+    snprintf(path, sizeof(path), "%s/tune.mod", tmpdir);
+    fp = fopen(path, "wb");
+    CHECK(fp != NULL);
+    if (fp) { fputs("M.K.", fp); fclose(fp); }
+    dumb_register_stdfiles();
+    CHECK(dumb_load_mod_quick("no-such.mod") == NULL);
+    duh = dumb_load_mod_quick(path);
+    CHECK(duh != NULL);
+    /* no music library: the player runs, silent, and never ends */
+    memset(&fmus, 0, sizeof(fmus));
+    dp = al_start_duh(duh, 2, 0, 0.5f, 4096, 22050);
+    CHECK(dp != NULL);
+    CHECK_EQ(fmus.opens, 0);
+    CHECK_EQ(al_poll_duh(dp), 0);
+    al_pause_duh(dp); al_resume_duh(dp);
+    al_duh_set_volume(dp, 0.25f);
+    CHECK(al_duh_get_volume(dp) == 0.25f);
+    al_stop_duh(dp);
+    /* with it: opened, played looping at the volume, paused, ended */
+    fmus.present = 1;
+    dp = al_start_duh(duh, 2, 0, 0.5f, 4096, 22050);
+    CHECK(dp != NULL);
+    CHECK_EQ(fmus.opens, 1);
+    CHECK(strcmp(fmus.name, path) == 0);
+    CHECK_EQ(fmus.state, 1);
+    CHECK_EQ(fmus.volume, 128);
+    al_duh_set_volume(dp, 2.0f);
+    CHECK_EQ(fmus.volume, 256);
+    al_pause_duh(dp);
+    al_pause_duh(dp);
+    CHECK_EQ(fmus.pauses, 1);
+    CHECK_EQ(al_poll_duh(dp), 0);
+    al_resume_duh(dp);
+    fmus.pos_ms = 1500;
+    CHECK_EQ(al_duh_get_position(dp), 98304);
+    fmus.state = 0;                 /* the library stopped it */
+    CHECK(al_poll_duh(dp) != 0);
+    al_stop_duh(dp);
+    CHECK_EQ(fmus.closes, 1);
+    unload_duh(duh);
+    /* Unix names reach the music library as AmigaDOS ones */
+    if (chdir(tmpdir) == 0) {
+        snprintf(unixname, sizeof(unixname), "./tune.mod");
+        duh = dumb_load_mod(unixname);
+        CHECK(duh != NULL);
+        dp = al_start_duh(duh, 2, 0, 1.0f, 4096, 22050);
+        CHECK(strcmp(fmus.name, "tune.mod") == 0);
+        al_stop_duh(dp);
+        unload_duh(duh);
+        CHECK(chdir("/") == 0);
+    }
+    dumb_exit();
+    CHECK_EQ(fmus.exits, 1);
+    memset(&fmus, 0, sizeof(fmus));
+}
+
+static void test_open_invaders_compat(void)
+{
+    PALLETE p;
+    uint8_t px[4];
+    BITMAP *b;
+    FONT *f;
+    char path[400];
+    get_pallete(p);
+    CHECK(sizeof(p) == sizeof(PALETTE));
+    CHECK(DAT_PALLETE == DAT_PALETTE);
+    CHECK(GFX_VGA != GFX_AUTODETECT && GFX_MODEX != GFX_VESA1);
+    bmp_write16(px, 0xF81F); CHECK_EQ(bmp_read16(px), 0xF81F);
+    bmp_write15(px, 0x7C1F); CHECK_EQ(bmp_read15(px), 0x7C1F);
+    bmp_write32(px, 0x00FF00FF); CHECK_EQ((long)bmp_read32(px), 0x00FF00FFL);
+    bmp_write24(px, 0x123456);
+    CHECK(px[0] == 0x12 && px[1] == 0x34 && px[2] == 0x56);
+    CHECK_EQ(bmp_read24(px), 0x123456);
+    CHECK_EQ(is_windowed_mode(), 0);
+    CHECK_EQ(set_gfx_mode(GFX_VGA, 320, 200, 0, 0), 0);
+    /* load_bitmap_font, and load_font of a .pcx: a glyph grid */
+    b = create_bitmap(8, 6);
+    clear_to_color(b, 7);
+    rectfill(b, 1, 1, 2, 4, 0);
+    putpixel(b, 1, 1, 15);
+    rectfill(b, 4, 1, 6, 4, 0);
+    snprintf(path, sizeof(path), "%s/font.pcx", tmpdir);
+    CHECK_EQ(save_pcx(path, b, default_palette), 0);
+    destroy_bitmap(b);
+    f = load_bitmap_font(path, NULL, NULL);
+    CHECK(f != NULL);
+    if (f) {
+        CHECK_EQ(text_height(f), 4);
+        CHECK_EQ(text_length(f, " !"), 2 + 3);
+        make_trans_font(f);
+        destroy_font(f);
+    }
+    f = load_font(path, NULL, NULL);
+    CHECK(f != NULL);
+    if (f) destroy_font(f);
+    CHECK(load_bitmap_font("no-such.pcx", NULL, NULL) == NULL);
+}
+
 static void test_fli(void)
 {
     int n;
@@ -1750,6 +1858,8 @@ int main(void)
     test_menus();
     test_fli();
     test_truecolour();
+    test_aldumb();
+    test_open_invaders_compat();
     allegro_exit();
     CHECK(!fake.open);
     {

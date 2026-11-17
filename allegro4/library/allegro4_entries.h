@@ -3475,6 +3475,31 @@ static void L_set_write_alpha_blender(REG(a6, struct A4Base *_lb))
     LEAVE();
 }
 
+static int L_is_windowed_mode(REG(a6, struct A4Base *_lb))
+{
+    int _r;
+    ENTER(_lb);
+    _r = is_windowed_mode();
+    LEAVE();
+    return _r;
+}
+
+static FONT * L_load_bitmap_font(REG(a0, const char * filename), REG(a1, RGB * pal), REG(a2, void * param), REG(a6, struct A4Base *_lb))
+{
+    FONT * _r;
+    ENTER(_lb);
+    _r = load_bitmap_font(filename, pal, param);
+    LEAVE();
+    return _r;
+}
+
+static void L_make_trans_font(REG(a0, FONT * f), REG(a6, struct A4Base *_lb))
+{
+    ENTER(_lb);
+    make_trans_font(f);
+    LEAVE();
+}
+
 static const APTR a4_vectors[] = {
     (APTR)lib_open, (APTR)lib_close, (APTR)lib_expunge, (APTR)lib_null,
     (APTR)L__getpixel,
@@ -3906,5 +3931,8 @@ static const APTR a4_vectors[] = {
     (APTR)L_set_screen_blender,
     (APTR)L_set_trans_blender,
     (APTR)L_set_write_alpha_blender,
+    (APTR)L_is_windowed_mode,
+    (APTR)L_load_bitmap_font,
+    (APTR)L_make_trans_font,
     (APTR)-1,
 };

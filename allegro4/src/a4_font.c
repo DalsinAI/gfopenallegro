@@ -281,6 +281,11 @@ FONT *load_font(const char *filename, RGB *pal, void *param)
     FONT *f = NULL;
     int i;
     (void)param;
+    {   /* a picture of a glyph grid, as Allegro 4.2's load_font */
+        const char *e = get_extension(filename);
+        if (e && (!ustricmp(e, "pcx") || !ustricmp(e, "bmp") || !ustricmp(e, "tga") || !ustricmp(e, "lbm")))
+            return load_bitmap_font(filename, pal, param);
+    }
     d = load_datafile(filename);
     if (!d) return NULL;
     for (i = 0; d[i].type != DAT_END; i++) {
@@ -506,3 +511,19 @@ int get_font_range_end(FONT *f, int range)
     for (r = (a4_range *)f->data; r; r = r->next, n++) { last = r; if (n == range) return r->end - 1; }
     return (range == -1 && last) ? last->end - 1 : -1;
 }
+
+/* ---- fonts from a picture ------------------------------------------------------------- */
+
+FONT *load_bitmap_font(const char *filename, RGB *pal, void *param)
+{
+    BITMAP *b;
+    FONT *f;
+    (void)param;
+    b = load_bitmap(filename, pal);
+    if (!b) return NULL;
+    f = grab_font_from_bitmap(b);
+    destroy_bitmap(b);
+    return f;
+}
+
+void make_trans_font(FONT *f) { (void)f; }

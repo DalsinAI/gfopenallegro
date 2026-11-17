@@ -273,3 +273,5 @@ void vsync(void)
         if (!a4_os_timer_async()) a4_timer_dispatch();
     }
 }
+
+int is_windowed_mode(void) { return 0; }
