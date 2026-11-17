@@ -22,7 +22,7 @@ python3 "$HERE/tools/gen_lib.py" --check
 
 SOFT="-specs=$HERE/specs/m68k-soft-m68040.specs"
 WARN="-Wall -Wextra -Werror -Wno-unused-parameter"
-INC="-I$HERE/include -I$HERE/src"
+INC="-I$HERE/include -I$HERE/src -I$HERE/library/gfopensynth"
 # The library: a4 holds the opener's state (library/allegro4_state.h), so no
 # file of it may use a4 for anything else.
 LIBCFLAGS="-m68040 $SOFT -Os -fomit-frame-pointer -fno-delete-null-pointer-checks -ffixed-a4 -DA4_LIBRARY $WARN $INC -fno-builtin -fno-tree-loop-distribute-patterns"
@@ -34,7 +34,7 @@ for m in $CORE; do
     "$CC" $LIBCFLAGS -c -o "$OUT/obj/$m.o" "$HERE/src/$m.c"
     OBJS="$OBJS $OUT/obj/$m.o"
 done
-for m in a4_os_amiga a4_acgame_glue; do
+for m in a4_os_amiga a4_acgame_glue a4_synth_amiga; do
     # shellcheck disable=SC2086
     "$CC" $LIBCFLAGS -c -o "$OUT/obj/$m.o" "$HERE/library/$m.c"
     OBJS="$OBJS $OUT/obj/$m.o"

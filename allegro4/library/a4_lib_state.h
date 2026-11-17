@@ -23,6 +23,9 @@ struct a4_lib_state {
     volatile int timer_quit;
     struct MsgPort *delay_port;             /* the game task's, for rest() */
     struct timerequest *delay_io;
+    struct Library *synth_lib;              /* this opener's gfopensynth.library (a4_synth_amiga.c) */
+    void *synth;                            /* its synth */
+    int synth_mode;                         /* A4_SYNTH_ */
 };
 
 #define A4L ((struct a4_lib_state *)a4_state_ptr)

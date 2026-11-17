@@ -12,6 +12,6 @@ CC=${CC:-cc}
   "$ROOT"/src/a4_gfx.c "$ROOT"/src/a4_input.c "$ROOT"/src/a4_timer.c "$ROOT"/src/a4_file.c \
   "$ROOT"/src/a4_datafile.c "$ROOT"/src/a4_font.c "$ROOT"/src/a4_image.c "$ROOT"/src/a4_sound.c \
   "$ROOT"/src/a4_system.c "$ROOT"/src/a4_config.c "$ROOT"/src/a4_public.c "$ROOT"/src/a4_gui.c "$ROOT"/src/a4_menu.c "$ROOT"/src/a4_fli.c "$ROOT"/src/a4_os_host.c \
-  "$ROOT"/tests/fake_acgame.c "$ROOT"/tests/test_allegro4.c \
+  "$ROOT"/tests/fake_acgame.c "$ROOT"/tests/fake_synth.c "$ROOT"/tests/test_allegro4.c \
   -o "$OUT"
 "$OUT"
