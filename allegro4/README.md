@@ -52,13 +52,25 @@ Allegro 4's old names (`PALLETE`, `get_pallete`...), `bmp_read*`/`bmp_write*`
 at every depth, `load_bitmap_font` and the DOS driver ids (`GFX_VGA`,
 `GFX_MODEX`...) are there.
 
-Limits: MIDI loads but plays silent; samples are mixed and pushed to
-acgame.library, which plays them from acgame.library 1.3. Games written for Unix paths
+Music (1.1): MIDI plays on GFOpenSynth (`gfopensynth.library`, General MIDI
+and MT-32), opened when a game installs sound with a MIDI driver. On a machine
+with AkikoPlus's MIDI port the synth in the machine plays it, as a real one
+plugged into the port would. With no port the synth runs from a SoundFont
+(`DEVS:SoundFonts/default.sf2`, or `ENV:GFOpenSynth/SoundFont`) and is mixed
+with the samples, so the music goes out the way they do: acgame.library, to
+AHI or Paula. `play_midi`, `play_looped_midi`, `stop_midi`, `midi_pause`,
+`midi_resume`, `midi_seek`, `midi_out`, `get_midi_length`, `midi_pos`,
+`midi_time` and the MIDI volume work. Without gfopensynth.library (or
+without a port and a SoundFont) music is silent and the game runs on.
+A game built with liballeg 1.0 gets music too; only its `midi_time` stays 0.
+
+Samples are mixed and pushed to acgame.library, which plays them from
+acgame.library 1.3. Games written for Unix paths
 work: "./data" and "../save" become "data" and "/save".
 
 ## Building
 
-    tests/run_tests.sh     host unit tests (673 checks; SANITIZE="-fsanitize=address,undefined")
+    tests/run_tests.sh     host unit tests (737 checks; SANITIZE="-fsanitize=address,undefined")
     build-amiga.sh         allegro4.library, liballeg.a, tests/A4LibSmoke (STOVE=, OUT=)
     tools/gen_lib.py       the library's calls from include/allegro.h
     package.sh OUT DEST VERSION   the GFOpenUp part (Parts/Allegro4) and the SDK

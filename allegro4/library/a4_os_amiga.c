@@ -285,6 +285,7 @@ void a4_os_title(const char *text) { (void)text; }
 void a4_lib_cleanup(void)
 {
     allegro_exit();
+    a4_synth_close();
     a4_os_timer_stop();
     if (A4L->delay_io) {
         CloseDevice((struct IORequest *)A4L->delay_io);

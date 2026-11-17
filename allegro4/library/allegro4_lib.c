@@ -1,7 +1,7 @@
 /* Copyright (c) 2026 AmiCradle Team. MIT licence (see allegro4/LICENSE).
  * SPDX-License-Identifier: MIT
  *
- * allegro4.library 1.0: the Allegro 4 API for AmigaOS 3.x, drawing and
+ * allegro4.library 1.1: the Allegro 4 API for AmigaOS 3.x, drawing and
  * reading the keyboard and mouse through acgame.library. A game asks
  * acgame.library for it (ACG_OpenAllegro(4)) or opens it itself; the stubs
  * it links (liballeg.a) do either.
@@ -35,7 +35,7 @@
 
 #define A4_LIB_NAME "allegro4.library"
 #define A4_LIB_VERSION 1
-#define A4_LIB_REVISION 0
+#define A4_LIB_REVISION 1
 
 struct ExecBase *SysBase;
 struct DosLibrary *DOSBase;
@@ -44,8 +44,8 @@ struct Device *TimerBase;
 int start(void) { return -1; }      /* run as a program: nothing (stays first in the file) */
 
 static const char lib_name[] = A4_LIB_NAME;
-static const char lib_id[] = "allegro4.library 1.0 (16.11.2026) Allegro 4 on ACGame, AmiCradle Team\r\n";
-static const char lib_ver[] __attribute__((used)) = "$VER: allegro4.library 1.0 (16.11.2026)";
+static const char lib_id[] = "allegro4.library 1.1 (17.11.2026) Allegro 4 on ACGame, AmiCradle Team\r\n";
+static const char lib_ver[] __attribute__((used)) = "$VER: allegro4.library 1.1 (17.11.2026)";
 
 struct a4_public;
 int a4_install(struct a4_public *pub, int system_id);

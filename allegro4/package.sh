@@ -25,6 +25,7 @@ cat > "$P/Part" <<PART
 part Allegro4 $VERSION
 ; allegro4.library: the Allegro 4 API for ACGame games (AGA and RTG)
 needs 68040
+needs part ACGame
 add "Libs/allegro4.library" "LIBS:allegro4.library"
 PART
 (cd "$T/part" && tar -czf "$DEST/allegro4-$VERSION-part.tar.gz" --owner=0 --group=0 Parts)
