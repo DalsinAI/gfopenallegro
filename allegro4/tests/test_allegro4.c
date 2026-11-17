@@ -1393,6 +1393,23 @@ static int dm_x, dm_y, dm_w, dm_h, dm_items;
 static void t_draw_menu(int x, int y, int w, int h) { dm_x = x; dm_y = y; dm_w = w; dm_h = h; }
 static void t_draw_item(MENU *m, int x, int y, int w, int h, int bar, int sel) { (void)m; (void)x; (void)y; (void)w; (void)h; (void)bar; (void)sel; dm_items++; }
 
+/* KRaptor installs the mouse before its 640x480 mode: the new mode must
+ * give the pointer the whole screen, not the old 320x200 range */
+static void test_mouse_new_mode(void)
+{
+    CHECK_EQ(set_gfx_mode(GFX_AUTODETECT, 320, 200, 0, 0), 0);
+    CHECK_EQ(install_mouse(), 3);
+    CHECK_EQ(set_gfx_mode(GFX_AUTODETECT, 640, 480, 0, 0), 0);
+    fake.px = 600; fake.py = 400; fake.buttons = 0;
+    poll_mouse();
+    CHECK_EQ(mouse_x, 600); CHECK_EQ(mouse_y, 400);
+    fake.px = 5000; fake.py = 5000;
+    poll_mouse();
+    CHECK_EQ(mouse_x, 639); CHECK_EQ(mouse_y, 479);
+    fake.px = fake.py = 0;
+    poll_mouse();
+}
+
 static void test_menus(void)
 {
     static MENU sub[] = {
@@ -1729,6 +1746,7 @@ int main(void)
     test_config();
     test_old_palette();
     test_config_kraptor();
+    test_mouse_new_mode();
     test_menus();
     test_fli();
     test_truecolour();

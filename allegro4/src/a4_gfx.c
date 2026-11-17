@@ -127,6 +127,11 @@ int set_gfx_mode(int card, int w, int h, int v_w, int v_h)
     A4S->screen_bmp = b;
     A4S->gfx_on = 1;
     A4S->gfx_card = card;
+    /* as in Allegro, a new mode gives the mouse the whole screen */
+    A4S->mouse_range[0] = 0;
+    A4S->mouse_range[1] = 0;
+    A4S->mouse_range[2] = w - 1;
+    A4S->mouse_range[3] = h - 1;
     A4S->screen_dirty = 1;
     A4S->palette_dirty = 1;
     A4S->refresh_rate = A4S->requested_refresh > 0 ? A4S->requested_refresh : 50;
@@ -199,6 +204,9 @@ void a4_present(void)
     BITMAP *b = A4S->screen_bmp;
     int y, i, w, d;
     if (!A4S->gfx_on || !b) return;
+    /* where timers only run at poll points (the host), every frame shown is
+     * one: a game loop that only blits to the screen still gets its ticks */
+    if (!a4_os_timer_async()) a4_timer_dispatch();
     frame = acgame_platform_begin_indexed_frame();
     if (!frame) return;
     w = (int)frame->width < (int)((b->w + 7) & ~7) ? (int)frame->width : (int)((b->w + 7) & ~7);
