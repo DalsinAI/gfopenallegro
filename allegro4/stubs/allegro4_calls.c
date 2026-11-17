@@ -5613,3 +5613,42 @@ void set_write_alpha_blender(void)
     register struct Library *_a6 __asm("a6") = _b;
     __asm volatile ("jsr -2598(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
 }
+
+int is_windowed_mode(void)
+{
+    struct Library *const _b = a4_base();
+    if (!_b) return (int)0;
+    register long _d0 __asm("d0") = 0;
+    register long _d1 __asm("d1") = 0;
+    register long _a0 __asm("a0") = 0;
+    register long _a1 __asm("a1") = 0;
+    register struct Library *_a6 __asm("a6") = _b;
+    __asm volatile ("jsr -2604(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
+    return (int)_d0;
+}
+
+FONT * load_bitmap_font(const char *filename, RGB *pal, void *param)
+{
+    struct Library *const _b = a4_base();
+    if (!_b) return (FONT *)0;
+    register long _d0 __asm("d0") = 0;
+    register long _d1 __asm("d1") = 0;
+    register const char * _a0 __asm("a0") = filename;
+    register RGB * _a1 __asm("a1") = pal;
+    register void * _a2 __asm("a2") = param;
+    register struct Library *_a6 __asm("a6") = _b;
+    __asm volatile ("jsr -2610(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a2), "r"(_a6) : "cc", "memory");
+    return (FONT *)_d0;
+}
+
+void make_trans_font(FONT *f)
+{
+    struct Library *const _b = a4_base();
+    if (!_b) return;
+    register long _d0 __asm("d0") = 0;
+    register long _d1 __asm("d1") = 0;
+    register FONT * _a0 __asm("a0") = f;
+    register long _a1 __asm("a1") = 0;
+    register struct Library *_a6 __asm("a6") = _b;
+    __asm volatile ("jsr -2616(%%a6)" : "+r"(_d0), "+r"(_d1), "+r"(_a0), "+r"(_a1) : "r"(_a6) : "cc", "memory");
+}
