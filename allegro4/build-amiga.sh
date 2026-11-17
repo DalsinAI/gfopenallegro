@@ -7,6 +7,7 @@
 #   liballeg.a         what a game links: the public variables, the calls
 #                      made game-side (formats, floats, the GUI) and a stub per call
 #   tests/A4LibSmoke   opens a screen, draws, blits, reads a key, times 1 s
+#   tests/A4MidiPlay   plays a MIDI file as a game does (A4MidiPlay FILE [LOOP])
 #   build-amiga.sh     STOVE=dir (default ~/AmiCradle/stoves/os32-gcc16)  OUT=dir
 set -eu
 HERE=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
@@ -71,3 +72,7 @@ echo "$OUT/liballeg.a ($(wc -c < "$OUT/liballeg.a") bytes)"
 # shellcheck disable=SC2086
 "$CC" $GAMECFLAGS -o "$OUT/tests/A4LibSmoke" "$HERE/tests/lib_smoke.c" "$OUT/liballeg.a"
 echo "$OUT/tests/A4LibSmoke ($(wc -c < "$OUT/tests/A4LibSmoke") bytes)"
+# A4MidiPlay: a MIDI file played as a game plays it (the lab's music check)
+# shellcheck disable=SC2086
+"$CC" $GAMECFLAGS -o "$OUT/tests/A4MidiPlay" "$HERE/tests/midi_play.c" "$OUT/liballeg.a"
+echo "$OUT/tests/A4MidiPlay ($(wc -c < "$OUT/tests/A4MidiPlay") bytes)"
