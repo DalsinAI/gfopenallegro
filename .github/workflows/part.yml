@@ -1,0 +1,67 @@
+# Copyright (c) 2026 AmiCradle Team. MIT licence.
+# allegro4.library's GFOpenUp part, built on every merge (gfopenup docs/design/PARTS-ON-MERGE.md) with the os32-gcc16 stove
+# (gfopenup's stove action), never on daletop. A pull request builds only. A push to main publishes the part to the
+# rolling pre-release "parts" as gfopenallegro-<commit12>.tar.gz: build/part/Parts/Allegro4 (allegro4.library, with its Part file,
+# as allegro4/package.sh lays it out) and PART.json (this commit, the part's name and version, the compiler), with
+# latest.json beside it. The newest 30 builds are kept. release.yml makes one of these builds a release of its own.
+name: GFOpenUp part
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+concurrency:
+  group: part-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  part:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DalsinAI/gfopenup/.github/actions/stove@team3/parts-on-merge-20261117
+      - name: Build
+        run: OUT="$PWD/build/amiga" sh allegro4/build-amiga.sh
+      - name: Host tests
+        run: sh allegro4/tests/run_tests.sh
+      - name: The part
+        id: part
+        shell: bash
+        run: |
+          set -euo pipefail
+          # the part's version is the library's own, so a part can't fall behind what it ships
+          v=$(grep -a -o '\$VER: allegro4.library [0-9][0-9.]*' build/amiga/allegro4.library | head -1 | awk '{print $3}')
+          [ -n "$v" ] || { echo "::error::allegro4.library has no version string"; exit 1; }
+          rm -rf build/part && mkdir -p build/part out
+          sh allegro4/package.sh build/amiga build/dist "$v"
+          tar -C build/part -xzf "build/dist/allegro4-$v-part.tar.gz"
+          head -1 build/part/Parts/Allegro4/Part | grep -qx "part Allegro4 $v"
+          c=$GITHUB_SHA; s=${c:0:12}
+          cc=$("$STOVE/prefix/bin/m68k-amigaos-gcc" --version | head -1)
+          cat > PART.json <<J
+          {"repo": "gfopenallegro", "commit": "$c", "built": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+           "files": ["build/part/Parts/Allegro4"],
+           "parts": [{"name": "Allegro4", "version": "$v", "main": "Libs/allegro4.library"}],
+           "siblings": {}, "compiler": "$cc"}
+          J
+          python3 -c 'import json; json.load(open("PART.json"))'
+          tar -czf "out/gfopenallegro-$s.tar.gz" --owner=0 --group=0 PART.json build/part/Parts/Allegro4
+          cp PART.json out/latest.json
+          cat out/latest.json; tar -tzf "out/gfopenallegro-$s.tar.gz"
+          echo "asset=out/gfopenallegro-$s.tar.gz" >> "$GITHUB_OUTPUT"
+      - name: Publish to the "parts" pre-release
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          gh release view parts >/dev/null 2>&1 || gh release create parts --prerelease --target main \
+            --title "GFOpenUp part builds" --notes "Each merge's GFOpenUp part, by commit (gfopenup docs/design/PARTS-ON-MERGE.md)."
+          gh release upload parts "${{ steps.part.outputs.asset }}" out/latest.json --clobber
+          gh release view parts --json assets --jq '[.assets[] | select(.name | startswith("gfopenallegro-"))] | sort_by(.createdAt) | reverse | .[30:] | .[].name' \
+            | while read -r n; do gh release delete-asset parts "$n" -y; done
