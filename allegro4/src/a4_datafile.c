@@ -118,6 +118,7 @@ static RGB *read_palette(PACKFILE *f, long size)
 
 static void *load_object(PACKFILE *f, long type, long size, void (*callback)(DATAFILE *));
 static DATAFILE *load_file_object(PACKFILE *f, void (*callback)(DATAFILE *));
+static DATAFILE *load_file_objects(PACKFILE *f, long count, void (*callback)(DATAFILE *));
 
 static void destroy_object(DATAFILE *d)
 {
@@ -143,9 +144,13 @@ static void *load_object(PACKFILE *f, long type, long size, void (*callback)(DAT
     for (i = 0; i < A4S->ntypes; i++)
         if (A4S->types[i].id == type && A4S->types[i].load) return A4S->types[i].load(f, size);
     switch (type) {
-    case DAT_FILE:
-        if (pack_mgetl(f) != DAT_MAGIC) return NULL;
-        return load_file_object(f, callback);
+    case DAT_FILE: {
+        /* a nested datafile: its object count and objects, as Allegro 4's grabber writes it
+         * (or "ALL." first, as some tools write it) */
+        long first = pack_mgetl(f);
+        if (first == DAT_MAGIC) return load_file_object(f, callback);
+        return load_file_objects(f, first, callback);
+    }
     case DAT_BITMAP:
     case DAT_C_SPRITE:
     case DAT_XC_SPRITE: {
@@ -164,7 +169,12 @@ static void *load_object(PACKFILE *f, long type, long size, void (*callback)(DAT
 /* the objects after "ALL.": a count, then each object's properties and chunk */
 static DATAFILE *load_file_object(PACKFILE *f, void (*callback)(DATAFILE *))
 {
-    long count = pack_mgetl(f), c = 0;
+    return load_file_objects(f, pack_mgetl(f), callback);
+}
+
+static DATAFILE *load_file_objects(PACKFILE *f, long count, void (*callback)(DATAFILE *))
+{
+    long c = 0;
     DATAFILE *dat;
     DATAFILE_PROPERTY *props = NULL;
     int nprops = 0;
