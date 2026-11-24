@@ -29,6 +29,8 @@ jobs:
         run: OUT="$PWD/build/amiga" sh allegro4/build-amiga.sh
       - name: Host tests
         run: sh allegro4/tests/run_tests.sh
+      - name: The datafile writer (tools/a4dat)
+        run: sh allegro4/tools/a4dat/test_a4dat.sh
       - name: The part
         id: part
         shell: bash
