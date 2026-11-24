@@ -48,8 +48,9 @@ BITMAP *create_bitmap_ex(int color_depth, int width, int height)
     if (width < 0 || height < 0 || !vt) return NULL;
     b = new_bitmap_struct(width, height);
     if (!b) return NULL;
-    /* rows a multiple of 4 bytes, so 16/32-bit pixels are aligned */
-    pitch = ((size_t)(width ? width : 1) * (size_t)a4_bpp(color_depth) + 3) & ~(size_t)3;
+    /* the rows one after another, as in Allegro 4's memory bitmaps: games read bmp->dat as width x
+     * height pixels (Liquid War's maps); 16- and 32-bit pixels stay aligned, a row being whole pixels */
+    pitch = (size_t)(width ? width : 1) * (size_t)a4_bpp(color_depth);
     pix = (unsigned char *)a4_calloc(pitch * (size_t)(height ? height : 1));
     if (!pix) { a4_free(b); return NULL; }
     b->vtable = vt;
