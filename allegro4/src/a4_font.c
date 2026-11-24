@@ -527,3 +527,56 @@ FONT *load_bitmap_font(const char *filename, RGB *pal, void *param)
 }
 
 void make_trans_font(FONT *f) { (void)f; }
+
+#ifdef A4_WRITERS
+/* ---- the font object a4_read_font_object reads, for the host's dat (tools/a4dat) ------------- */
+
+static void write_glyph_bitmap(PACKFILE *pk, BITMAP *b)
+{
+    int x, y, d = a4_bdepth(b);
+    pack_mputw(b->w, pk);
+    pack_mputw(b->h, pk);
+    for (y = 0; y < b->h; y++) {
+        if (d == 8) { pack_fwrite(b->line[y], b->w, pk); continue; }
+        for (x = 0; x < b->w; x++) {
+            uint32_t c = a4_rd(b->line[y], x, d);
+            int r, g, bl;
+            if (c == a4_maskc(d)) { r = 255; g = 0; bl = 255; }
+            else a4_unpack(d, c, &r, &g, &bl);
+            if (d == 15 || d == 16) pack_iputw(((r >> 3) << 11) | ((g >> 2) << 5) | (bl >> 3), pk);
+            else { pack_putc(r, pk); pack_putc(g, pk); pack_putc(bl, pk); }
+        }
+    }
+}
+
+/* 0 (the new format), the number of ranges, then each range: its depth (1 a mono range, 0 an 8-bit
+ * colour one, else the colour depth), its first and last character, and each glyph (mono: width,
+ * height and the bits, a row a whole byte; colour: width, height and the pixels), as Allegro 4's
+ * grabber writes a font */
+int a4_write_font_object(PACKFILE *pk, FONT *f)
+{
+    a4_range *r;
+    int n = 0, i;
+    if (!f || !pk) return -1;
+    for (r = (a4_range *)f->data; r; r = r->next) n++;
+    pack_mputw(0, pk);
+    pack_mputw(n, pk);
+    for (r = (a4_range *)f->data; r; r = r->next) {
+        int count = r->end - r->begin, depth = 8;
+        if (!r->mono) for (i = 0; i < count; i++) if (r->bitmaps[i]) { depth = a4_bdepth(r->bitmaps[i]); break; }
+        pack_putc(r->mono ? 1 : depth == 8 ? 0 : depth, pk);
+        pack_mputl(r->begin, pk);
+        pack_mputl(r->end - 1, pk);
+        for (i = 0; i < count; i++) {
+            if (r->mono) {
+                FONT_GLYPH *g = r->glyphs[i];
+                pack_mputw(g ? g->w : 0, pk);
+                pack_mputw(g ? g->h : 0, pk);
+                if (g) pack_fwrite(g->dat, ((g->w + 7) / 8) * g->h, pk);
+            } else if (r->bitmaps[i]) write_glyph_bitmap(pk, r->bitmaps[i]);
+            else { pack_mputw(0, pk); pack_mputw(0, pk); }
+        }
+    }
+    return pack_ferror(pk) ? -1 : 0;
+}
+#endif
