@@ -384,14 +384,15 @@ void packfile_password(const char *password)
 
 /* ---- "file.dat#OBJECT[/NESTED]" -------------------------------------------------- */
 
-static PACKFILE *find_object(PACKFILE *f, const char *name)
+/* count: the object count already read, or -1 to read it here */
+static PACKFILE *find_object(PACKFILE *f, const char *name, long count)
 {
     char want[256], got[256];
     int n = 0, nested = 0;
     while (*name && *name != '/' && *name != '#' && n < 255) want[n++] = *name++;
     want[n] = 0;
     if (*name) { nested = 1; name++; }
-    pack_mgetl(f);                      /* the object count */
+    if (count < 0) pack_mgetl(f);       /* the object count */
     for (;;) {
         int use = 0;
         long type = pack_mgetl(f);
@@ -412,8 +413,11 @@ static PACKFILE *find_object(PACKFILE *f, const char *name)
             c = pack_fopen_chunk(f, FALSE);
             if (!c) return NULL;
             if (nested) {
-                if (type != DAT_FILE || pack_mgetl(c) != DAT_MAGIC) return NULL;
-                return find_object(c, name);
+                /* a nested datafile: its count first (the grabber's), or "ALL." then the count */
+                long first;
+                if (type != DAT_FILE) return NULL;
+                first = pack_mgetl(c);
+                return find_object(c, name, first == DAT_MAGIC ? -1 : first);
             }
             return c;
         }
@@ -437,7 +441,7 @@ static PACKFILE *open_datafile_object(const char *filename)
     f = pack_fopen(path, F_READ_PACKED);
     if (!f) return NULL;
     if (pack_mgetl(f) != DAT_MAGIC) { pack_fclose(f); return NULL; }
-    c = find_object(f, hash + 1);
+    c = find_object(f, hash + 1, -1);
     if (!c) { pack_fclose(f); return NULL; }
     return c;                           /* pack_fclose on it closes the file too */
 }

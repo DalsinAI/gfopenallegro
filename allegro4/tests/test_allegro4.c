@@ -447,11 +447,11 @@ static void test_files(void)
     CHECK(exists(tmp("words.bin")));
     CHECK_EQ(file_size_ex(tmp("words.bin")), 2 + 2 + 4 + 4 + 14);
 
-    /* a datafile: an 8-bit bitmap, a palette, packed data, a nested file */
+    /* a datafile: an 8-bit bitmap, a palette, packed data, nested files ("ALL." first, and as the grabber writes one) */
     f = fopen(tmp("test.dat"), "wb");
     put32(f, F_NOPACK_MAGIC);
     put32(f, DAT_MAGIC);
-    put32(f, 4);
+    put32(f, 5);
     put_name(f, "SPRITE");
     put32(f, DAT_BITMAP); put32(f, 2 + 4 + 8); put32(f, 2 + 4 + 8);
     put16(f, 8); put16(f, 4); put16(f, 2);
@@ -466,6 +466,10 @@ static void test_files(void)
     put32(f, DAT_FILE); put32(f, 4 + 4 + 12 + 1 + 4 + 4 + 4 + 3); put32(f, 4 + 4 + 12 + 1 + 4 + 4 + 4 + 3);
     put32(f, DAT_MAGIC); put32(f, 1);
     put_name(f, "X"); put32(f, DAT_DATA); put32(f, 3); put32(f, 3); fwrite("xyz", 1, 3, f);
+    put_name(f, "GRAB");
+    put32(f, DAT_FILE); put32(f, 4 + 12 + 1 + 4 + 4 + 4 + 2); put32(f, 4 + 12 + 1 + 4 + 4 + 4 + 2);
+    put32(f, 1);
+    put_name(f, "Y"); put32(f, DAT_DATA); put32(f, 2); put32(f, 2); fwrite("yy", 1, 2, f);
     fclose(f);
     d = load_datafile(tmp("test.dat"));
     CHECK(d != NULL);
@@ -478,7 +482,10 @@ static void test_files(void)
         CHECK_EQ(d[2].type, DAT_DATA); CHECK_EQ(d[2].size, 200);
         CHECK(memcmp(d[2].dat, text, 200) == 0);
         CHECK_EQ(d[3].type, DAT_FILE);
-        CHECK_EQ(d[4].type, DAT_END);
+        CHECK_EQ(d[4].type, DAT_FILE);
+        CHECK_EQ(d[5].type, DAT_END);
+        o = find_datafile_object(d, "GRAB/Y");
+        CHECK(o && o->size == 2 && !memcmp(o->dat, "yy", 2));
         CHECK(!strcmp(get_datafile_property(&d[1], DAT_NAME), "PAL"));
         o = find_datafile_object(d, "sprite");
         CHECK(o == &d[0]);
@@ -494,6 +501,12 @@ static void test_files(void)
     unload_datafile_object(o);
     o = load_datafile_object(tmp("test.dat"), "INNER/X");
     CHECK(o && !memcmp(o->dat, "xyz", 3));
+    unload_datafile_object(o);
+    o = load_datafile_object(tmp("test.dat"), "GRAB/Y");
+    CHECK(o && !memcmp(o->dat, "yy", 2));
+    unload_datafile_object(o);
+    o = load_datafile_object(tmp("test.dat"), "GRAB");
+    CHECK(o && o->type == DAT_FILE && ((DATAFILE *)o->dat)[0].size == 2 && ((DATAFILE *)o->dat)[1].type == DAT_END);
     unload_datafile_object(o);
     CHECK(load_datafile_object(tmp("test.dat"), "NOPE") == NULL);
 
