@@ -27,6 +27,20 @@ static const char *tmp(const char *name) { static char b[4][512]; static int i; 
 
 static void test_bitmaps(void)
 {
+    {   /* the rows back to back from dat, as in Allegro's memory bitmaps */
+        static const int depths[] = {8, 16, 24, 32};
+        int k;
+        for (k = 0; k < 4; k++) {
+            BITMAP *m = create_bitmap_ex(depths[k], 147, 3);
+            int bpp = depths[k] == 8 ? 1 : depths[k] / 8;
+            CHECK(m != NULL);
+            if (!m) continue;
+            CHECK(m->line[0] == (unsigned char *)m->dat);
+            CHECK(m->line[1] == (unsigned char *)m->dat + 147 * bpp);
+            CHECK(m->line[2] == (unsigned char *)m->dat + 2 * 147 * bpp);
+            destroy_bitmap(m);
+        }
+    }
     BITMAP *b = create_bitmap(16, 8), *s;
     int x, y, n;
     CHECK(b != NULL);
